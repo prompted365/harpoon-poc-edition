@@ -1,0 +1,45 @@
+# Railway deployment configuration for Harpoon PoC Edition
+# Documentation: https://docs.railway.com/guides/config-as-code
+
+[build]
+buildCommand = "cargo build --release -p service"
+watchPatterns = ["crates/**/*.rs", "Cargo.toml", "Cargo.lock"]
+
+[deploy]
+startCommand = "target/release/service"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "harpoon-service"
+
+[services.variables]
+SERVICE_HOST = "0.0.0.0"
+SERVICE_PORT = "$PORT"
+RUST_LOG = "info"
+RUST_BACKTRACE = "1"
+
+# Optional HostedAI integration (set these in Railway dashboard)
+# HOSTED_AI_BASE_URL = "https://api.hosted.ai"
+# HOSTED_AI_API_KEY = "your-api-key"
+# HOSTED_AI_POOL_ID = "gpu-pool-1"
+# HOSTED_AI_OVERCOMMIT = "true"
+
+[services.resources]
+cpu = 1000  # 1 vCPU
+memory = 1024  # 1GB RAM
+
+[services.networking]
+publicDomain = true
+
+[services.volumes]
+# No persistent volumes needed for this stateless service
+
+[services.healthcheck]
+path = "/health"
+interval = 30
+timeout = 10
+retries = 3
+startPeriod = 60

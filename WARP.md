@@ -71,7 +71,7 @@ cargo build --target wasm32-unknown-unknown -p wasm_classifier
 
 ```bash
 # Fast tests (excluding Python dependencies)
-cargo test --workspace --exclude orchestrator
+cargo test -p service -p harpoon_bridge -p resources
 
 # Full workspace tests (requires Python environment)
 cargo test --workspace --all-features
@@ -82,8 +82,8 @@ cargo test --test "*" -- --nocapture
 # Specific crate tests
 cargo test -p service
 cargo test -p harpoon_bridge
-cargo test -p harpoon-core
 cargo test -p resources
+# Note: orchestrator and harpoon-core have Python deps by default
 
 # Code quality
 cargo fmt --all
@@ -93,19 +93,16 @@ cargo clippy --workspace --all-targets -- -D warnings
 ## Architecture Overview
 
 ### Workspace Structure (PoC Edition)
-This PoC version contains 5-8 crates organized in three tiers:
+This PoC version contains exactly 5 crates organized in three tiers:
 
-**Active Crates:**
+**Current Crates (5 total):**
 - `service`: HTTP API service for the Harpoon orchestration platform
-- `orchestrator`: Core orchestration engine for routing AI inference requests
+- `orchestrator`: Core orchestration engine for routing AI inference requests  
 - `harpoon_bridge`: Bridge between Harpoon fusion system and orchestration layer
 - `harpoon-core`: Core fusion envelope primitives for distributed AI orchestration
 - `resources`: MCP resource management and tool definitions
 
-**Planned Crates (may be absent in PoC):**
-- `engine_pymlx`: MLX (Apple Silicon) inference engine with Python bindings
-- `wasm_classifier`: WebAssembly text classifier
-- `pyffi`: Python foreign function interface
+**Note:** This PoC edition is streamlined - additional crates like `engine_pymlx`, `wasm_classifier`, and `pyffi` are not included to keep the demo focused on HostedAI integration.
 
 ### Three-Tier Architecture
 ```
@@ -169,6 +166,23 @@ docker run -p 8080:8080 \
   -e HOSTED_AI_API_KEY=your-key \
   -e HOSTED_AI_BASE_URL=https://api.hosted.ai \
   harpoon-poc
+```
+
+### Railway Deployment
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+# or: cargo install railwayapp --locked
+
+# Deploy to Railway (uses railway.toml)
+railway login
+railway project create harpoon-poc-edition
+railway up
+
+# Set HostedAI environment variables in Railway dashboard
+# HOSTED_AI_BASE_URL=https://api.hosted.ai
+# HOSTED_AI_API_KEY=your-api-key
+# HOSTED_AI_POOL_ID=gpu-pool-1
 ```
 
 ## API Endpoints

@@ -87,11 +87,11 @@ git clone https://github.com/prompted365/harpoon-poc-edition.git
 cd harpoon-poc-edition
 
 # Build and run (lightweight mode - no Python dependencies required)
-make run
+cargo build --release -p service
+cargo run -p service
 
-# Or set up full development environment
-make init  # Set up Python environment and wasm-pack
-make build # Build all components
+# Or test the service
+cargo test -p service -p harpoon_bridge -p resources
 ```
 
 ### Build Modes
@@ -100,16 +100,15 @@ make build # Build all components
 
 #### 🚀 Lightweight Mode (Production Ready - Recommended)
 ```bash
-# Run service without Python dependencies - uses mock inference engines
-make run
-# or
+# Build and run service without Python dependencies
+cargo build --release -p service
 cargo run -p service
 
 # This mode provides:
 # - Full HTTP API functionality  
 # - Health checks and monitoring
 # - HostedAI cloud GPU integration
-# - WASM classifier support
+# - Mock inference responses when PyMLX disabled
 # - No Python linking issues
 # - Fast build times
 # - Cross-platform compatibility
@@ -117,13 +116,13 @@ cargo run -p service
 
 #### ⚡ Full PyMLX Mode (Apple Silicon Development)
 ```bash
-# Initialize Python environment and install MLX dependencies
-make init
+# Note: MLX features require additional setup not included in this PoC
+# This PoC focuses on HostedAI integration instead of local MLX
 
-# Build with PyMLX features enabled
+# Build with PyMLX features (if available)
 cargo build --workspace --all-features
 
-# Run with MLX support enabled
+# Run with MLX support (mock responses in PoC)
 cargo run -p service --features pymlx
 ```
 
@@ -140,16 +139,16 @@ cargo run -p service
 
 ### ✅ Build Status Summary
 
-All major build issues have been resolved:
+PoC Edition build status:
 
-- **✅ Rust workspace builds successfully** (`cargo build --workspace --all-features`)
-- **✅ Python extension builds successfully** (`cargo build -p homeskillet_oa4_rs --features pyo3/extension-module`)
-- **✅ WASM components build successfully** (`cargo build --target wasm32-unknown-unknown -p wasm_classifier`)
-- **✅ All tests pass** (`cargo test --workspace --exclude orchestrator`)
-- **✅ Type compatibility resolved** between GenOptions across crates
-- **✅ MCP server builds and runs** with proper JSON-RPC handling
-- **✅ Service layer completely decoupled** from Python dependencies
+- **✅ Service builds and runs successfully** (`cargo build -p service`)
+- **✅ Core crates build without Python deps** (`cargo test -p service -p harpoon_bridge -p resources`)
+- **✅ HostedAI integration ready** (mock responses when credentials not provided)
+- **✅ HTTP API fully functional** with health checks and v2 endpoints
+- **✅ Railway deployment configured** via `railway.toml`
 - **✅ Docker builds work** in lightweight mode
+- **⚠️ Limited MLX support** (PoC focuses on HostedAI integration)
+- **⚠️ Some workspace tests require Python** (orchestrator and harpoon-core have PyO3 deps)
 
 ### Configuration
 
@@ -367,8 +366,28 @@ For containerized environments (lightweight mode):
 
 ```bash
 # Build and run container
-docker build -t homeskillet-oa4-rs .
-docker run -p 8080:8080 homeskillet-oa4-rs
+docker build -t harpoon-poc .
+docker run -p 8080:8080 harpoon-poc
+```
+
+### Railway Deployment
+
+Deploy directly to Railway using the included `railway.toml` configuration:
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+# or: cargo install railwayapp --locked
+
+# Login and deploy
+railway login
+railway project create harpoon-poc-edition
+railway up
+
+# Configure HostedAI environment variables in Railway dashboard:
+# HOSTED_AI_BASE_URL=https://api.hosted.ai
+# HOSTED_AI_API_KEY=your-api-key
+# HOSTED_AI_POOL_ID=gpu-pool-1
 ```
 
 ## Development
@@ -376,34 +395,31 @@ docker run -p 8080:8080 homeskillet-oa4-rs
 ### Building Components
 
 ```bash
-# Full workspace build (all features)
+# Lightweight build (production ready - no Python dependencies)
+cargo build -p service -p harpoon_bridge -p resources
+
+# Full workspace build (includes Python dependencies)
 cargo build --workspace --all-features
 
-# Lightweight build (no Python dependencies - production ready)
-cargo build -p service -p orchestrator -p wasm_classifier
-
-# Individual components
+# Individual components (PoC Edition - 5 crates total)
 cargo build -p service          # HTTP service
 cargo build -p orchestrator     # Core orchestration engine  
-cargo build -p harpoon-core     # Core fusion engine
+cargo build -p harpoon-core     # Core fusion engine (has Python deps)
 cargo build -p harpoon_bridge   # Bridge for multi-agent coordination
-cargo build -p mcp_server       # Model Context Protocol server
-cargo build -p wasm_classifier  # WASM module
 cargo build -p resources        # MCP resource management
-cargo build -p engine_pymlx     # MLX inference engine
 
-# Python extensions (Apple Silicon only)
-cargo build -p homeskillet_oa4_rs --features pyo3/extension-module
-
-# WASM module for web deployment
-cargo build --target wasm32-unknown-unknown -p wasm_classifier
+# Note: This PoC edition doesn't include:
+# - mcp_server (not in this PoC)
+# - wasm_classifier (not in this PoC) 
+# - engine_pymlx (not in this PoC)
+# - pyffi (not in this PoC)
 ```
 
 ### Running Tests
 
 ```bash
-# All tests (excluding orchestrator due to Python dependencies)
-cargo test --workspace --exclude orchestrator
+# Lightweight tests (no Python dependencies)
+cargo test -p service -p harpoon_bridge -p resources
 
 # Full workspace tests (requires Python environment)
 cargo test --workspace --all-features
@@ -411,15 +427,15 @@ cargo test --workspace --all-features
 # Integration tests
 cargo test --test "*" -- --nocapture
 
-# Specific crate tests
+# Specific crate tests (PoC Edition)
 cargo test -p service
 cargo test -p harpoon_bridge
-cargo test -p mcp_server
-cargo test -p wasm_classifier
 cargo test -p resources
+# Note: orchestrator and harpoon-core require Python/PyO3 setup
 
-# Python extension tests (requires MLX setup)
+# Python-dependent tests (requires setup)
 cargo test -p orchestrator --features pymlx
+cargo test -p harpoon-core --features python
 ```
 
 ### Model Context Protocol (MCP)
