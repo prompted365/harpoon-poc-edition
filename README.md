@@ -1,18 +1,18 @@
-# Harpoon: Open Source AI Orchestration Platform
+# Harpoon PoC Edition: HostedAI GPUaaS Integration
 
-**By Prompted LLC** - A lightweight, production-ready AI orchestration platform with flexible deployment options.
+**By Prompted LLC** - A streamlined proof-of-concept showcasing AI orchestration with HostedAI's cloud GPU infrastructure.
 
-A comprehensive AI orchestration platform that seamlessly integrates intelligent model routing, multi-agent coordination, and flexible deployment options. Built with Rust for performance and reliability, Harpoon provides a unified interface for AI workflows across local hardware and cloud GPU infrastructure.
+This PoC edition demonstrates intelligent AI orchestration specifically designed for HostedAI's GPUaaS platform. Built with Rust for performance and reliability, it showcases advanced GPU pool management, overcommit capabilities, and multi-tenant resource allocation. The lightweight architecture proves the viability of cloud-native AI orchestration without the traditional CAPEX constraints of GPU infrastructure.
 
-## Project Statistics
+## Project Statistics (PoC Edition)
 
-- **Total Files**: 6,250
-- **Total Lines of Code**: 2.93M
-- **Languages**: Rust (14,867 LOC), Python (2.83M LOC), TypeScript (1,155 LOC), JavaScript (1,449 LOC)
-- **Rust Crates**: 9 specialized crates for different functionality
-- **AI Agents**: 4 compliance-focused agents
-- **Documentation**: 89 files including 35 GTM-specific documents
-- **Compliance Frameworks**: HIPAA, SOC2, GDPR, PCI-DSS, ISO27001, NIST
+- **Total Files**: 85 (core codebase, excluding generated reports)
+- **Total Lines of Code**: ~33K (includes configs and docs)
+- **Languages**: Rust (6,062 LOC), Markdown (22 docs), YAML/JSON (17 configs)
+- **Rust Crates**: 5 specialized crates for HostedAI integration
+- **Architecture**: Streamlined 3-tier design for cloud GPU orchestration
+- **Focus**: HostedAI GPUaaS integration with overcommit and multi-tenancy
+- **Documentation**: 22 files focused on PoC deployment and integration
 
 ## Architecture Overview
 
@@ -83,8 +83,8 @@ pip install mlx mlx-lm
 
 ```bash
 # Clone the repository
-git clone https://github.com/prompted365/harpoon-open-source.git
-cd harpoon-open-source
+git clone https://github.com/prompted365/harpoon-poc-edition.git
+cd harpoon-poc-edition
 
 # Build and run (lightweight mode - no Python dependencies required)
 make run
