@@ -1,0 +1,165 @@
+# Dockerfile for Homeskillet Monorepo
+# Multi-stage build for optimal image size and security
+
+# Stage 1: Rust Builder
+FROM rust:1.75-slim AS rust-builder
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    protobuf-compiler \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy workspace files
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ ./crates/
+COPY homeskillet-csl-main_qoq_patched/ ./homeskillet-csl-main_qoq_patched/
+
+# Build all crates in release mode
+RUN cargo build --release --workspace
+
+# Stage 2: Python Builder
+FROM python:3.11-slim AS python-builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy Python requirements and install
+COPY scripts/requirements.txt ./scripts/
+COPY ubiquity-harpoon/requirements.txt ./ubiquity-harpoon/
+RUN python -m venv /opt/venv && \
+    . /opt/venv/bin/activate && \
+    pip install --no-cache-dir -r scripts/requirements.txt && \
+    pip install --no-cache-dir -r ubiquity-harpoon/requirements.txt
+
+# Stage 3: Node.js Builder
+FROM node:20-slim AS node-builder
+
+WORKDIR /app
+
+# Copy package files
+COPY web-ui/package*.json ./web-ui/
+COPY crates/wasm_classifier/pkg/package.json ./crates/wasm_classifier/pkg/
+
+# Install dependencies
+WORKDIR /app/web-ui
+RUN npm ci --production
+
+WORKDIR /app/crates/wasm_classifier/pkg
+RUN npm ci --production
+
+# Build web UI
+WORKDIR /app
+COPY web-ui/ ./web-ui/
+WORKDIR /app/web-ui
+RUN npm run build
+
+# Stage 4: Runtime
+FROM ubuntu:22.04
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    python3.11 \
+    python3-pip \
+    nodejs \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r homeskillet && useradd -r -g homeskillet homeskillet
+
+# Create directories
+RUN mkdir -p /app/bin /app/lib /app/config /app/logs /app/data && \
+    chown -R homeskillet:homeskillet /app
+
+WORKDIR /app
+
+# Copy Rust binaries
+COPY --from=rust-builder /app/target/release/homeskillet-orchestrator ./bin/
+COPY --from=rust-builder /app/target/release/mcp-server ./bin/
+COPY --from=rust-builder /app/target/release/harpoon-bridge ./bin/
+
+# Copy Python environment and scripts
+COPY --from=python-builder /opt/venv /opt/venv
+COPY scripts/ ./scripts/
+COPY ubiquity-harpoon/ ./ubiquity-harpoon/
+
+# Copy Node.js build artifacts
+COPY --from=node-builder /app/web-ui/dist ./web-ui/dist
+COPY --from=node-builder /app/web-ui/node_modules ./web-ui/node_modules
+COPY --from=node-builder /app/crates/wasm_classifier/pkg ./crates/wasm_classifier/pkg
+
+# Copy configuration files
+COPY .env.example ./config/.env.example
+COPY config.example.yaml ./config/config.example.yaml
+COPY docs/hosted-ai-poc/ ./docs/hosted-ai-poc/
+
+# Copy entrypoint script
+COPY <<'EOF' /app/entrypoint.sh
+#!/bin/bash
+set -e
+
+# Source Python virtual environment
+source /opt/venv/bin/activate
+
+# Set up configuration if not exists
+if [ ! -f /app/config/.env ]; then
+    cp /app/config/.env.example /app/config/.env
+    echo "⚠️  Created default .env file. Please update with your credentials."
+fi
+
+if [ ! -f /app/config/config.yaml ]; then
+    cp /app/config/config.example.yaml /app/config/config.yaml
+    echo "⚠️  Created default config.yaml. Please update with your settings."
+fi
+
+# Export environment variables
+set -a
+source /app/config/.env
+set +a
+
+# Default to orchestrator if no command specified
+if [ "$#" -eq 0 ]; then
+    exec /app/bin/homeskillet-orchestrator
+else
+    exec "$@"
+fi
+EOF
+
+RUN chmod +x /app/entrypoint.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Expose ports
+EXPOSE 8080 8443 9090
+
+# Volume mounts
+VOLUME ["/app/config", "/app/logs", "/app/data"]
+
+# Switch to non-root user
+USER homeskillet
+
+# Entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command (can be overridden)
+CMD ["/app/bin/homeskillet-orchestrator"]
+
+# Labels
+LABEL org.opencontainers.image.source="https://github.com/prompted365/homeskillet-csl"
+LABEL org.opencontainers.image.description="Homeskillet AI Orchestration Platform with Hosted.AI Integration"
+LABEL org.opencontainers.image.licenses="MIT OR Apache-2.0"

@@ -1,0 +1,19 @@
+[package]
+name = "resources"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+once_cell.workspace = true
+parking_lot.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+
+# For embedding resources (removed askama as we're not using it)
+rust-embed = "8.0"

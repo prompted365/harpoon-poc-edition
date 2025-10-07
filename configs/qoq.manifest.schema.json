@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QoQ Manifest",
+  "type": "object",
+  "required": [
+    "version",
+    "repo",
+    "tree",
+    "symbols",
+    "flows",
+    "status"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "repo": {
+      "type": "object"
+    },
+    "tree": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "edge"
+        ]
+      }
+    },
+    "contracts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "status": {
+      "type": "object"
+    }
+  }
+}

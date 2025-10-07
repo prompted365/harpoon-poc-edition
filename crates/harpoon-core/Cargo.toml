@@ -1,0 +1,42 @@
+[package]
+name = "harpoon-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core fusion envelope primitives for distributed AI orchestration"
+authors = ["Prompted365 and Contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/prompted365/homeskillet-csl"
+documentation = "https://docs.rs/harpoon-core"
+readme = "README.md"
+keywords = ["fusion", "distributed", "ai", "orchestration", "wasm"]
+categories = ["algorithms", "asynchronous", "wasm"]
+
+[lib]
+name = "harpoon_core"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["python"]
+python = ["pyo3/extension-module"]
+wasm = ["dep:wasm-bindgen", "getrandom/js", "dep:serde-wasm-bindgen"]
+
+[dependencies]
+once_cell = "1.19"
+parking_lot = "0.12"
+rayon = "1.10"
+regex = "1.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha3 = "0.10"
+thiserror = "1.0"
+base64 = "0.22"
+hex = "0.4"
+
+pyo3 = { version = "0.22", optional = true, features = ["abi3-py38", "extension-module"] }
+wasm-bindgen = { version = "0.2.92", optional = true, features = ["serde-serialize"] }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+getrandom = { version = "0.2", optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"

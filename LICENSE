@@ -1,0 +1,37 @@
+Homeskillet Project License Information
+=======================================
+
+This project contains multiple crates with different licensing terms:
+
+Core Crates (Dual Licensed MIT OR Apache-2.0):
+---------------------------------------------
+- orchestrator
+- harpoon-core
+
+These crates are dual-licensed under either:
+- MIT License (see LICENSE-MIT)
+- Apache License, Version 2.0 (see LICENSE-APACHE)
+
+You may choose either license for these crates.
+
+Dependent Crates (Custom License):
+---------------------------------
+- service
+- mcp_server
+- harpoon_bridge
+- resources
+- wasm_classifier
+- pyffi
+- engine_pymlx
+
+These crates are licensed under the Homeskillet Custom License (see LICENSE-CUSTOM).
+Commercial use requires explicit permission from Prompted365.
+
+Third-Party Dependencies:
+------------------------
+All third-party dependencies retain their original licenses.
+See Cargo.toml files for specific dependency licenses.
+
+For questions about licensing, please contact:
+- Email: licensing@prompted365.com
+- Web: https://prompted365.com/licensing

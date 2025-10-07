@@ -1,0 +1,100 @@
+# Homeskillet Configuration with Quantized Models
+# This demonstrates the correct model specifications for production use
+
+# Server configuration
+server:
+  host: "0.0.0.0"
+  port: 8080
+  metrics_port: 9090
+  max_concurrent_requests: 100
+  request_timeout_secs: 300
+
+# Quantized model configurations
+models:
+  # Ultra-fast classification model - Gemma 270M quantized
+  gemma:
+    repo: "google/gemma-270m-it-q4_k_m"
+    context_limit: 8192
+    temperature: 0.3         # Lower temperature for deterministic classification
+    top_p: 0.9
+    max_new_tokens: 512      # Small outputs for fast routing decisions  
+    enable_thinking: false   # No thinking mode for classification tasks
+    
+  # Heavy reasoning model - Qwen 30B A3B MoE quantized  
+  qwen:
+    repo: "qwen/qwen2.5-30b-a3b-moe-q4_k_m"
+    context_limit: 32768
+    temperature: 0.8         # Higher temperature for creative reasoning
+    top_p: 0.9
+    max_new_tokens: 4096     # Large outputs for complex tasks
+    enable_thinking: true    # Enable thinking mode for MoE architecture
+
+# Model-specific performance characteristics
+performance:
+  gemma-270m:
+    typical_latency_ms: 50   # Ultra-fast inference
+    memory_usage_mb: 512     # Very low memory footprint
+    batch_size: 32           # Can handle larger batches
+    use_cases: ["classification", "extraction", "routing", "simple_qa"]
+    
+  qwen-30b-moe:
+    typical_latency_ms: 800  # Moderate latency for complex reasoning
+    memory_usage_mb: 12288   # Moderate memory (thanks to quantization)  
+    batch_size: 2            # Smaller batches for MoE
+    use_cases: ["reasoning", "code_generation", "creative_writing", "complex_analysis"]
+
+# Routing strategy optimized for quantized models
+routing:
+  # Use ultra-fast Gemma 270M for simple tasks
+  simple_tasks:
+    model: "gemma"
+    complexity_threshold: 0.3
+    categories: ["classification", "extraction", "summary", "simple_qa"]
+    
+  # Use Qwen 30B MoE for complex tasks  
+  complex_tasks:
+    model: "qwen"
+    complexity_threshold: 0.7
+    categories: ["reasoning", "code", "creative", "analysis"]
+    
+  # Fallback strategy
+  default_model: "gemma"
+  fallback_model: "qwen"
+
+# HostedAI configuration for quantized models
+hosted_ai:
+  base_url: "https://api.hosted.ai"
+  api_key: "${HOSTED_AI_API_KEY}"
+  pool: "quantized-models"
+  overcommit: true
+  timeout_secs: 30
+  max_retries: 3
+  
+  # Resource requirements for quantized models
+  resource_requirements:
+    gemma-270m:
+      min_tflops: 1
+      min_vram_mb: 512
+      max_vram_mb: 1024
+      
+    qwen-30b-moe:
+      min_tflops: 15
+      min_vram_mb: 12288
+      max_vram_mb: 20480
+
+# Monitoring configuration
+monitoring:
+  prometheus_enabled: true
+  log_level: "info"
+  structured_logs: true
+  
+  # Track quantized model specific metrics
+  track_model_performance: true
+  track_quantization_effects: true
+
+# Safety configuration
+safety:
+  redact_emails: true
+  redact_phones: true
+  strip_api_keys: true
+  max_prompt_length: 100000

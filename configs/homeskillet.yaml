@@ -1,0 +1,72 @@
+# Homeskillet Orchestrator Configuration
+# This file demonstrates all available configuration options
+
+# Server configuration
+server:
+  host: "0.0.0.0"
+  port: 8080
+  metrics_port: 9090
+  max_concurrent_requests: 100
+  request_timeout_secs: 300
+
+# Model configurations
+models:
+  gemma:
+    repo: "google/gemma-270m-it-q4_k_m"
+    context_limit: 8192
+    temperature: 0.3  # Lower temp for classification tasks
+    top_p: 0.9
+    max_new_tokens: 512  # Smaller outputs for fast routing
+    enable_thinking: false
+    
+  qwen:
+    repo: "qwen/qwen2.5-30b-a3b-moe-q4_k_m"
+    context_limit: 32768
+    temperature: 0.8
+    top_p: 0.9
+    max_new_tokens: 4096
+    enable_thinking: true  # Enable thinking for complex reasoning
+    
+  # Optional: Add Mistral model
+  # mistral:
+  #   repo: "mistralai/Mistral-7B-Instruct-v0.2"
+  #   context_limit: 8192
+  #   temperature: 0.7
+  #   top_p: 0.95
+  #   max_new_tokens: 2048
+  #   enable_thinking: false
+
+# Hosted AI configuration (optional)
+hosted_ai:
+  base_url: "https://api.hosted.ai"
+  api_key: "${HOSTED_AI_API_KEY}"  # Use environment variable
+  pool: "standard"
+  overcommit: true
+  timeout_secs: 30
+  max_retries: 3
+
+# Monitoring configuration
+monitoring:
+  prometheus_enabled: true
+  jaeger_enabled: false
+  # jaeger_endpoint: "http://localhost:14268/api/traces"
+  log_level: "info"
+  structured_logs: true
+
+# Safety configuration
+safety:
+  redact_emails: true
+  redact_phones: true
+  strip_api_keys: true
+  max_prompt_length: 100000
+  blocked_patterns:
+    - "password:"
+    - "api_key:"
+    - "secret:"
+
+# Cache configuration
+cache:
+  enabled: true
+  redis_url: "redis://localhost:6379"
+  ttl_seconds: 3600
+  max_entries: 1000

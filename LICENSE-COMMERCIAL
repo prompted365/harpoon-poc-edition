@@ -1,0 +1,43 @@
+Harpoon Open Source License
+
+Copyright (c) 2025 Prompted LLC
+
+This software and associated documentation files (the "Software") are made available under the terms of this license. By downloading, copying, accessing or using this software, you agree to the following terms and conditions.
+
+PERMITTED USE
+
+Subject to the restrictions below, you are free to use this software for any purpose, including commercial use, provided that:
+
+1. You retain this license notice in all copies of the software.
+2. You include attribution to Prompted LLC in any distribution of the software.
+3. You do not remove any copyright notices or license information.
+
+RESTRICTIONS
+
+You may NOT:
+
+1. Use this software to provide a competing service that directly competes with Prompted LLC's commercial offerings
+2. Remove or alter any license notices, copyright notices, or attributions
+3. Use Prompted LLC's trademarks, service marks, or logos without written permission
+4. Redistribute the software under a different license
+
+COMMERCIAL USE
+
+For commercial use beyond the scope of this license, including but not limited to:
+- Using this software as part of a commercial AI orchestration service
+- Integrating this software into proprietary commercial products
+- Offering this software as a managed service
+
+Please contact us at: breyden@prompted.community
+
+DISCLAIMER
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+CORE CRATES EXCEPTION
+
+The following core crates are dual-licensed under MIT and Apache-2.0:
+- orchestrator
+- harpoon-core
+
+These crates may be used under the terms of either the MIT License or Apache License 2.0, at your option.

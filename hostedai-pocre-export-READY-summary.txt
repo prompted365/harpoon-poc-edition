@@ -1,0 +1,14 @@
+
+READY ZIP created.
+
+Original ZIP SHA256   : 7118bbbdb26a4b3b710dce582685fcc9d9d8deb0848100da98ad80afcf7ad2c7
+READY ZIP path        : /mnt/data/hostedai-pocre-export-READY.zip
+READY ZIP SHA256      : b242a412fe2c1b477fb48333321b7965aeb19bd98690efc986e95700b99f7773
+
+Removed entries count : 114
+Inserted functionality: True
+
+Sanity indicators:
+- Top structure present (Cargo.toml, Dockerfile, configs/, crates/, docs/): True
+- Service signals (/health, /metrics code refs): {'health': True, 'metrics': False}
+- Hosted_AI_README has functionality overview + diagram: True

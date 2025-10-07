@@ -1,0 +1,49 @@
+# Model ID Mapping Configuration
+# Maps Harpoon internal model IDs to Hosted AI catalog IDs
+
+router_models:
+  # Light classification and routing model - Gemma 270M quantized
+  gemma-270m:
+    hosted_ai_id: "google/gemma-270m-it-q4_k_m"
+    description: "Ultra-fast classification and extraction (270M quantized)"
+    resource_requirements:
+      min_tflops: 1
+      min_vram_mb: 512
+      max_vram_mb: 1024
+    typical_latency_ms: 50
+    context_window: 8192
+    
+  # Heavy reasoning model - Qwen 30B A3B MoE quantized
+  qwen-30b-moe:
+    hosted_ai_id: "qwen/qwen2.5-30b-a3b-moe-q4_k_m"
+    description: "Mixture of Experts complex reasoning (30B A3B quantized)" 
+    resource_requirements:
+      min_tflops: 15
+      min_vram_mb: 12288
+      max_vram_mb: 20480
+    typical_latency_ms: 800
+    context_window: 32768
+
+routing_logic:
+  # Route simple tasks to lighter model
+  light_threshold: 0.3
+  
+  # Route complex tasks to heavy model
+  heavy_threshold: 0.7
+  
+  # Default routing strategy
+  default_model: "gemma-270m"
+  fallback_model: "qwen-30b-moe"
+  
+  # Batch size optimization
+  batch_sizes:
+    gemma-270m: 32  # Small model can handle larger batches
+    qwen-30b-moe: 2 # MoE model needs smaller batches
+
+# Hosted AI specific configuration
+hosted_ai:
+  overcommit_enabled: true
+  preemptible: true
+  priority_class: "normal"
+  allocation_timeout_seconds: 60
+  max_retry_attempts: 3

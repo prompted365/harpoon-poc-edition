@@ -1,0 +1,59 @@
+# Example configuration for Unified Orchestrator
+# Copy to ~/.orchestrator/config.yaml and customize
+
+# MLX Model Configuration
+models:
+  gemma:
+    repo: "mlx-community/gemma-3-270m-5bit"
+    context_limit: 2048
+    temperature: 0.1
+    top_p: 0.9
+    max_new_tokens: 96
+  
+  qwen:
+    repo: "lmstudio-community/Qwen3-30B-A3B-MLX-4bit"
+    context_limit: 4096
+    temperature: 0.7
+    top_p: 0.95
+    max_new_tokens: 512
+    enable_thinking: false
+
+# HostedAI Integration (optional)
+# When configured, enables dual deployment mode
+hosted_ai:
+  base_url: "https://api.hosted.ai"
+  api_key: "YOUR_API_KEY_HERE"
+  pool: "default"
+  overcommit: true
+
+# Harpoon Configuration
+harpoon:
+  hygiene_threshold: 0.7
+  max_batch_size: 64
+  thread_count: null  # null = auto-detect
+
+# GitHub Integration (for Strike operations)
+github:
+  # Option 1: GitHub App
+  app_id: ""
+  app_installation_id: ""
+  private_key_base64: ""
+  
+  # Option 2: Personal Access Token
+  token: ""
+  
+  # Target organizations for covenant analysis
+  orgs: []
+
+# Server Configuration
+server:
+  base_url: "http://localhost:8080"
+  webhook_secret: "your-webhook-secret"
+
+# Agent Configuration
+agents:
+  # For requesty.ai/Anthropic integration
+  requesty_api_key: ""
+  llm_model: "claude-3-5-sonnet-20240620"
+  max_subagents: 5
+  autonomy_level: "manual-review"  # or "autonomous"

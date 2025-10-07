@@ -1,0 +1,73 @@
+Ubiquity Harpoon Custom License
+Version 1.0, December 2024
+
+Copyright (c) 2024 Prompted LLC and Contributors
+
+This license applies to all crates within the Ubiquity Harpoon project that depend on
+the core crates (orchestrator and harpoon-core) which are dual-licensed under
+MIT and Apache 2.0.
+
+TERMS AND CONDITIONS
+
+1. Definitions
+   - "Core Crates" refers to orchestrator and harpoon-core crates.
+   - "Dependent Crates" refers to all other crates in this workspace that 
+     depend on Core Crates.
+   - "Commercial Use" means any use intended for or directed toward commercial
+     advantage or monetary compensation.
+
+2. Grant of License
+   Subject to the terms of this license, you are granted permission to:
+   a) Use, copy, modify, and distribute the Dependent Crates for non-commercial
+      purposes.
+   b) Use the Dependent Crates for Commercial Use only with explicit written
+      permission from Prompted LLC.
+   c) Create derivative works based on the Dependent Crates for internal use
+      within your organization.
+
+3. Restrictions
+   a) You may not sublicense the Dependent Crates separately from the Core Crates.
+   b) Any distribution must include this license and maintain all copyright notices.
+   c) Commercial Use requires a separate commercial license agreement.
+   d) You may not use the names of the contributors for endorsement without
+      explicit permission.
+
+4. Attribution
+   You must provide appropriate attribution in any derivative work or distribution:
+   - Include the original copyright notice
+   - Provide a link to the original repository: https://github.com/promptedllc/ubiquity-harpoon
+   - Indicate if changes were made
+
+5. Integration with Core Crates
+   When using Dependent Crates with Core Crates, the more permissive license
+   (MIT or Apache 2.0) of the Core Crates applies to the combined work only
+   if you have obtained commercial permission for the Dependent Crates.
+
+6. Contribution License
+   By contributing to the Dependent Crates, you agree that your contributions
+   will be licensed under this Custom License and you have the authority to
+   grant such license.
+
+7. Patent Grant
+   Contributors grant you a license to any patent claims they can license that
+   are necessarily infringed by their contributions to the Dependent Crates.
+
+8. Disclaimer
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+9. Limitation of Liability
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
+
+10. Termination
+    This license automatically terminates if you violate any of its terms.
+    Upon termination, you must cease all use and destroy all copies.
+
+11. Commercial Licensing
+    For commercial use licensing, please contact:
+    - Email: licensing@promptedllc.com
+    - Web: https://promptedllc.com/licensing
+
+END OF TERMS AND CONDITIONS

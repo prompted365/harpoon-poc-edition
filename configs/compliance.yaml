@@ -1,0 +1,227 @@
+# Ubiquity Harpoon Compliance Configuration
+# Central configuration for all compliance automation
+
+# Compliance Frameworks
+frameworks:
+  soc2:
+    enabled: true
+    type: "Type II"
+    audit_frequency: "annual"
+    controls:
+      - CC1  # Control Environment
+      - CC2  # Communication and Information
+      - CC3  # Risk Assessment
+      - CC4  # Monitoring Activities
+      - CC5  # Control Activities
+      - CC6  # System Operations
+      - CC7  # Change Management
+      - CC8  # Risk Mitigation
+      - CC9  # Incident Response
+      - A1   # Availability
+      - C1   # Confidentiality
+      - P1   # Privacy
+      
+  hipaa:
+    enabled: true
+    covered_entity: false
+    business_associate: true
+    safeguards:
+      administrative: true
+      physical: true
+      technical: true
+      
+  gdpr:
+    enabled: true
+    data_controller: true
+    data_processor: true
+    dpo_appointed: true
+    lead_supervisory_authority: "Ireland"
+    
+  pci_dss:
+    enabled: true
+    level: "Service Provider Level 2"
+    saq_type: "SAQ-D"
+    
+  iso27001:
+    enabled: true
+    certification_target: "2025-Q2"
+    scope: "All information processing systems"
+
+# Security Controls
+security_controls:
+  access_control:
+    mfa_required: true
+    mfa_methods:
+      - hardware_token
+      - authenticator_app
+      - sms_backup
+    session_timeout_minutes: 15
+    password_policy:
+      min_length: 14
+      complexity: high
+      history: 12
+      expiry_days: 90
+      lockout_threshold: 5
+      
+  encryption:
+    at_rest:
+      algorithm: "AES-256-GCM"
+      key_rotation_days: 365
+    in_transit:
+      min_tls_version: "1.2"
+      cipher_suites:
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        
+  logging:
+    retention_days: 365  # 1 year minimum
+    centralized_logging: true
+    log_destinations:
+      - type: "elasticsearch"
+        endpoint: "https://logs.ubiquity-harpoon.ai"
+      - type: "s3"
+        bucket: "ubiquity-audit-logs"
+        encryption: true
+    tamper_protection: true
+    
+  vulnerability_management:
+    scan_frequency: "weekly"
+    critical_patch_sla_hours: 24
+    high_patch_sla_days: 7
+    penetration_test_frequency: "annual"
+    
+# Audit Configuration
+audit:
+  internal_audit_frequency: "quarterly"
+  external_audit_frequency: "annual"
+  evidence_retention_years: 3
+  auditor_portal:
+    enabled: true
+    url: "https://audit.ubiquity-harpoon.ai"
+    
+# Incident Response
+incident_response:
+  team_activation_minutes: 60
+  notification_channels:
+    - email: "security@ubiquity-harpoon.ai"
+    - slack: "#security-incidents"
+    - pagerduty: "security-team"
+  severity_levels:
+    critical:
+      response_time_minutes: 15
+      escalation: "immediate"
+    high:
+      response_time_minutes: 60
+      escalation: "1_hour"
+    medium:
+      response_time_hours: 4
+      escalation: "4_hours"
+    low:
+      response_time_hours: 24
+      escalation: "next_business_day"
+      
+# Compliance Monitoring
+monitoring:
+  dashboards:
+    - name: "Executive Compliance Dashboard"
+      refresh_interval: 300  # 5 minutes
+      metrics:
+        - overall_compliance_score
+        - control_effectiveness
+        - open_findings
+        - risk_indicators
+    - name: "Operational Security Dashboard"
+      refresh_interval: 60  # 1 minute
+      metrics:
+        - failed_logins
+        - privilege_escalations
+        - system_availability
+        - threat_indicators
+        
+  alerts:
+    compliance_drift:
+      threshold: 0.05  # 5% drop
+      severity: "high"
+    control_failure:
+      threshold: 1
+      severity: "critical"
+    audit_finding:
+      threshold: 1
+      severity: "medium"
+      
+# Risk Management
+risk_management:
+  assessment_frequency: "quarterly"
+  risk_appetite:
+    financial: "low"
+    operational: "medium"
+    compliance: "very_low"
+    reputational: "very_low"
+  risk_register:
+    review_frequency: "monthly"
+    owner: "risk_committee"
+    
+# Training and Awareness
+training:
+  security_awareness:
+    frequency: "annual"
+    completion_required: 100
+    topics:
+      - phishing_awareness
+      - data_protection
+      - incident_reporting
+      - physical_security
+  role_specific:
+    developers:
+      - secure_coding
+      - owasp_top_10
+    administrators:
+      - privileged_access
+      - change_management
+    executives:
+      - risk_management
+      - compliance_overview
+      
+# Third Party Management
+third_party:
+  risk_assessment_required: true
+  security_questionnaire: true
+  contract_review:
+    security_requirements: true
+    data_protection: true
+    breach_notification: true
+    audit_rights: true
+  ongoing_monitoring:
+    frequency: "annual"
+    
+# Data Classification
+data_classification:
+  levels:
+    - name: "Public"
+      color: "green"
+      controls: "minimal"
+    - name: "Internal"
+      color: "yellow"
+      controls: "baseline"
+    - name: "Confidential"
+      color: "orange"
+      controls: "enhanced"
+    - name: "Restricted"
+      color: "red"
+      controls: "maximum"
+      
+# Compliance Automation
+automation:
+  evidence_collection:
+    enabled: true
+    frequency: "daily"
+    storage: "s3://ubiquity-compliance-evidence"
+  policy_review:
+    enabled: true
+    reminder_days: [90, 60, 30, 14, 7]
+  control_testing:
+    enabled: true
+    frequency: "monthly"
+  metric_collection:
+    enabled: true
+    frequency: "hourly"
