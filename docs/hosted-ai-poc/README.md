@@ -1,176 +1,106 @@
-# Hosted AI POC Documentation
+# Harpoon PoC Edition: HostedAI Integration
 
-## Overview
+**Prompted LLC** - AI Orchestration Platform Integration with HostedAI GPUaaS
 
-This directory contains documentation and materials for the Hosted AI integration proof of concept with the Harpoon orchestration platform.
+This directory contains the proof-of-concept implementation demonstrating Harpoon's integration with HostedAI's GPU-as-a-Service infrastructure for scalable AI model orchestration.
 
-## Document Structure
+## PoC Overview
 
-### 1. [POC Email](./poc-email.md)
-Communication template for POC proposal. Key points:
-- Describes orchestration approach
-- Explains workload processing methodology
-- Outlines deliverables
-- Lists requirements from Hosted AI
+Harpoon operates at the platform layer providing intelligent request routing and resource management, while leveraging HostedAI's infrastructure at the compute layer for GPU allocation and model inference. This streamlined integration showcases enterprise-ready AI orchestration without traditional CAPEX constraints.
 
-### 2. [POC Architecture](./poc-architecture.md)
-Technical architecture document covering:
-- Orchestration design
-- Processing methodology
-- Integration architecture with diagrams
-- Resource allocation strategies
-- API integration specifications
-- Security and monitoring architecture
+## Architecture
 
-### 3. [POC Timeline](./poc-timeline.md)
-Detailed 30-day implementation plan:
-- Week 1: Foundation & Integration
-- Week 2: Robustness & Monitoring
-- Week 3: Validation & Optimization
-- Week 4: Production Readiness
-- Daily task breakdowns
-- Risk mitigation strategies
-
-### 4. [POC Requirements](./poc-requirements.md)
-Complete requirements specification:
-- API endpoint requirements
-- Infrastructure prerequisites
-- Testing requirements
-- Compliance and legal needs
-- Success criteria and KPIs
-
-## Quick Start Guide
-
-### For Hosted.AI Technical Team
-
-1. **Review Architecture**: Start with [poc-architecture.md](./poc-architecture.md) to understand our integration approach
-2. **Check Requirements**: Review [poc-requirements.md](./poc-requirements.md) for needed API details
-3. **Timeline**: See [poc-timeline.md](./poc-timeline.md) for implementation schedule
-
-### For Development Team
-
-1. **Current State**: Check `/crates/orchestrator/src/hosted_ai.rs` for existing implementation
-2. **Configuration**: See `.env.example` for required environment variables
-3. **Docker Setup**: Use `Dockerfile.monorepo` for containerized deployment
-4. **Testing**: Run integration tests with `cargo test --package orchestrator`
-
-## Key Integration Points
-
-### 1. GPU Allocation Flow
 ```
-Request → Analyze → Allocate vGPU → Execute → Release
+┌─────────────────────────────────────────────────────┐
+│              Platform Layer (Harpoon)              │
+│  • Request Classification & Intelligent Routing     │
+│  • Resource Management & Pool Allocation           │
+│  • Circuit Breaker & Retry Logic                   │
+├─────────────────────────────────────────────────────┤
+│              Compute Layer (HostedAI)              │
+│  • GPU Pool Management                             │
+│  • Model Inference (Gemma-270M, Qwen-30B)         │
+│  • vGPU Allocation & Release                       │
+└─────────────────────────────────────────────────────┘
 ```
 
-### 2. Supported Models
-- Gemma-2B (2GB VRAM, 5 TFLOPS)
-- Mistral-7B (6GB VRAM, 10 TFLOPS)
-- Qwen-32B (32GB VRAM, 40 TFLOPS)
-- Custom models via configuration
+## Key Features
 
-### 3. Monitoring Stack
-- Prometheus metrics
-- Grafana dashboards
-- OpenTelemetry tracing
-- Structured JSON logging
+- **Intelligent Routing**: Automatic model selection based on request complexity
+- **Resource Efficiency**: Dynamic GPU allocation with overcommit support
+- **Production Ready**: Circuit breakers, retry logic, and comprehensive monitoring
+- **Cost Optimized**: Minimal resource usage with intelligent cleanup
+- **Enterprise Security**: Multi-tenant isolation and secure credential management
 
-## Current Implementation Status
+## Quick Start
 
-### ✅ Completed
-- Architecture design
-- Mock implementation
-- Test infrastructure
-- Documentation
-- Monitoring setup
+### Prerequisites
+- HostedAI API credentials and endpoint access
+- Docker (optional, for containerized deployment)
 
-### 🚧 In Progress
-- Real API integration
-- Authentication implementation
-- Performance optimization
-
-### ❌ Pending
-- Hosted.AI API credentials
-- Staging environment access
-- Production deployment
-
-## Communication Channels
-
-- **Technical Issues**: Create GitHub issue
-- **API Questions**: Contact Hosted.AI support
-- **POC Updates**: Weekly sync meetings
-- **Escalations**: Direct email to project leads
-
-## Deployment
-
-### Local Development
+### Configuration
 ```bash
-# Install dependencies
-cargo build --workspace
-
-# Run tests
-cargo test --workspace
-
-# Start orchestrator
-cargo run --bin homeskillet-orchestrator
+# Set HostedAI credentials
+export HOSTED_AI_BASE_URL="https://api.hosted.ai"
+export HOSTED_AI_API_KEY="your-api-key"
+export HOSTED_AI_POOL_ID="gpu-pool-1"
 ```
 
-### Docker Deployment
+### Running the PoC
 ```bash
-# Build monorepo image
-docker build -f Dockerfile.monorepo -t homeskillet-poc .
+# Build and run the service
+cargo run -p service
 
-# Run with configuration
-docker run -v ./config:/app/config \
-  -e HOSTED_AI_API_KEY=your_key \
-  homeskillet-poc
+# Test health endpoint
+curl http://localhost:8080/health
+
+# Test HostedAI integration
+curl -X POST http://localhost:8080/v2/process \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Complex reasoning task", "deployment": "HostedAI"}'
 ```
 
-### Kubernetes Deployment
-See `/k8s` directory for Kubernetes manifests (coming soon).
+## Implementation Details
 
-## Metrics & Monitoring
+### Request Flow
+1. **Classification**: Local analysis determines model complexity
+2. **Allocation**: Request vGPU resources from HostedAI pool
+3. **Inference**: Execute inference with allocated resources
+4. **Cleanup**: Automatic resource release and monitoring
 
-### Key Metrics to Track
-1. **Allocation Latency**: Time to acquire GPU
-2. **Inference Latency**: End-to-end request time  
-3. **GPU Utilization**: Actual vs allocated
-4. **Cost Efficiency**: $/inference by model
-5. **Error Rates**: By type and endpoint
+### Supported Models
+- **Gemma-270M**: Simple tasks (2GB VRAM, 5 TFLOPS)
+- **Qwen-30B**: Complex reasoning (20GB VRAM, 30 TFLOPS)
+- **Custom Models**: Configurable via requirements specification
 
-### Dashboard Access
-- Grafana: `http://localhost:3000`
-- Prometheus: `http://localhost:9090`
-- Application logs: `/app/logs`
+### Integration Points
 
-## Troubleshooting
+The PoC implements these HostedAI API endpoints:
+- `POST /v1/allocate` - Request GPU allocation
+- `POST /v1/inference` - Execute model inference  
+- `DELETE /v1/allocate/{id}` - Release allocated resources
 
-### Common Issues
+## Production Features
 
-1. **Authentication Failures**
-   - Check API key in environment
-   - Verify token expiration
-   - Check IP whitelist
-
-2. **Allocation Timeouts**
-   - Check pool availability
-   - Verify resource requirements
-   - Review retry configuration
-
-3. **Performance Issues**
-   - Check connection pooling
-   - Review batch sizes
-   - Monitor network latency
+- **Circuit Breaker**: Automatic fallback during API failures
+- **Retry Logic**: Exponential backoff with intelligent retry conditions
+- **Monitoring**: Prometheus metrics for allocation latency and resource usage
+- **Security**: Multi-tenant isolation and credential management
 
 ## Next Steps
 
-1. **Immediate**: Obtain API credentials from Hosted.AI
-2. **Week 1**: Complete API integration
-3. **Week 2**: Add production robustness
-4. **Week 3**: Performance validation
-5. **Week 4**: Production deployment
+1. **API Integration**: Align with actual HostedAI endpoint specifications
+2. **Live Testing**: Validate performance against real GPU infrastructure
+3. **Production Deployment**: Scale monitoring and optimize for production workloads
+
+## Technical Documentation
+
+For detailed implementation:
+- **Core Integration**: `crates/orchestrator/src/hosted_ai.rs`
+- **API Service**: `crates/service/src/main.rs`
+- **Configuration**: `configs/` directory
 
 ## Contact
 
-For questions about this POC:
-- Technical Lead: [Your Name]
-- Hosted.AI Contact: hello@hosted.ai
-- Project Repository: https://github.com/prompted365/homeskillet-csl
+**Prompted LLC** - [support@promptedllc.com](mailto:support@promptedllc.com)  
+Project Repository: [github.com/prompted365/harpoon-poc-edition](https://github.com/prompted365/harpoon-poc-edition)
