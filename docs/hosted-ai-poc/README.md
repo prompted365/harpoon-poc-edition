@@ -87,7 +87,7 @@ The PoC implements these HostedAI API endpoints:
 - **Monitoring**: Prometheus metrics for allocation latency and resource usage
 - **Security**: Multi-tenant isolation and credential management
 
-## Next Steps
+## Potential Next Steps
 
 1. **API Integration**: Align with actual HostedAI endpoint specifications
 2. **Live Testing**: Validate performance against real GPU infrastructure

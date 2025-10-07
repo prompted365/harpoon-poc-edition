@@ -247,19 +247,19 @@ Primary Pool Unavailable → Fallback Pool → Local MLX → Error Response
    - ✓ Metric collection and reporting
    - ✓ API compatibility validation
 
-## Next Steps
+## Potential Next Steps
 
-1. **Immediate (Week 1)**
+1. **Immediate (Week 1) - If proceeding**
    - Obtain API credentials
    - Set up development environment
    - Implement basic allocation flow
 
-2. **Short-term (Week 2-3)**
+2. **Short-term (Week 2-3) - Integration phase**
    - Complete all API integrations
    - Add monitoring and metrics
    - Conduct initial load testing
 
-3. **POC Completion (Week 4)**
+3. **POC Completion (Week 4) - If timeline allows**
    - Full system validation
    - Performance benchmarking
    - Documentation finalization
