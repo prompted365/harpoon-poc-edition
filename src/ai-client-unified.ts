@@ -71,6 +71,12 @@ export class UnifiedAIClient {
     
     const url = providerEndpoints[provider];
     
+    // Strip provider prefix from model ID for provider-specific endpoints
+    // e.g., "groq/qwen/qwen3-32b" → "qwen/qwen3-32b" when calling groq endpoint
+    const modelIdWithoutPrefix = modelId.startsWith(`${provider}/`) 
+      ? modelId.substring(`${provider}/`.length) 
+      : modelId;
+    
     // Build headers - CRITICAL: Use cf-aig-authorization for BYOK
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -82,13 +88,13 @@ export class UnifiedAIClient {
       headers['cf-aig-authorization'] = `Bearer ${this.env.AI_GATEWAY_TOKEN}`;
     }
     
-    console.log(`🌐 Calling ${provider} via AI Gateway (BYOK): ${modelId}`);
+    console.log(`🌐 Calling ${provider} via AI Gateway (BYOK): ${modelIdWithoutPrefix}`);
     
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: modelId,
+        model: modelIdWithoutPrefix,
         messages: [{ role: 'user', content: request.prompt }],
         temperature: request.temperature ?? 0.7,
         max_tokens: request.max_tokens ?? 1024,

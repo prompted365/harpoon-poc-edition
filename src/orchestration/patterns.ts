@@ -428,7 +428,7 @@ export class SmartRouterPattern {
         try {
           response = await this.aiClient.chat({
             model,
-            messages: [{ role: 'user', content: prompt }],
+            prompt, // Use prompt, not messages array
             temperature: 0.7,
             max_tokens: 1000
           });

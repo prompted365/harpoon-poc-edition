@@ -77,10 +77,12 @@ export class SmartRouter {
       ? MODEL_REGISTRY.find(m => m.id === request.model) || tierModels[0]
       : tierModels[0];
 
-    // Select fallback models from same tier
-    const fallbackModels = tierModels
-      .filter(m => m.id !== selectedModel.id)
-      .slice(0, 2);
+    // Select fallback models from same tier + always include Groq as final fallback
+    const groqModel = MODEL_REGISTRY.find(m => m.provider === 'groq');
+    const fallbackModels = [
+      ...tierModels.filter(m => m.id !== selectedModel.id).slice(0, 1),
+      ...(groqModel && groqModel.id !== selectedModel.id ? [groqModel] : [])
+    ];
 
     // Estimate cost and latency
     const estimatedTokens = Math.max(
