@@ -414,7 +414,7 @@ export class SmartRouterPattern {
       // Get routing decision
       const decision = this.router.routeRequest({ prompt, ...preferences });
       const primaryModel = decision.selected_model.id;
-      const fallbackModels = decision.alternatives.map((a: any) => a.id);
+      const fallbackModels = (decision.fallback_models || []).map((m: any) => m.id);
 
       let response;
       let modelUsed = primaryModel;

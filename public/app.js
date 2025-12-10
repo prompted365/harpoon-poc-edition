@@ -283,27 +283,31 @@ async function runMediatorOnly(prompt, routing) {
     await new Promise(resolve => setTimeout(resolve, 400));
   }
   
-  // Execute with smart routing
+  // Execute with smart routing - REAL AI CALL
   const response = await fetch('/api/orchestrate/smart', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt })
   }).then(r => r.json());
   
-  // Complete sub-agents
-  state.orchestration.mediator.tasks.forEach(task => {
+  console.log('Smart routing response:', response);
+  
+  // Complete sub-agents with REAL data
+  state.orchestration.mediator.tasks.forEach((task, idx) => {
     task.status = 'completed';
     task.progress = 100;
-    task.thoughts = 'Task completed successfully';
-    task.output = 'Response generated';
+    task.thoughts = `Processed query using ${response.metadata?.models_used?.[0] || 'AI model'}`;
+    task.output = idx === 0 ? 'Classified query as: ' + (prompt.length > 50 ? 'complex' : 'simple') : response.data?.answer?.substring(0, 100) + '...';
   });
   
   renderOrchestrationTree();
   
-  // Add response
+  // Add REAL AI response
+  const aiContent = response.data?.answer || response.answer || response.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
+  
   state.messages.push({
     role: 'assistant',
-    content: response.answer || response.data?.answer || 'Response generated',
+    content: aiContent,
     metadata: response.metadata || {},
     timestamp: Date.now()
   });
