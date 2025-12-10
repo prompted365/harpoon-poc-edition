@@ -298,6 +298,7 @@ async function runMediatorDelegation(prompt, orchestrationResponse) {
     progress: 0,
     thoughts: 'Waiting for execution...',
     actions: [],
+    input: prompt.substring(0, 200),
     output: null,
     children: agent.parallel ? Array(agent.count).fill(null).map((_, j) => ({
       id: `${agent.type}-child-${j}`,
@@ -306,6 +307,7 @@ async function runMediatorDelegation(prompt, orchestrationResponse) {
       progress: 0,
       thoughts: 'Waiting...',
       actions: [],
+      input: prompt.substring(0, 150),
       output: null
     })) : []
   }));
@@ -387,8 +389,11 @@ async function runMediatorDelegation(prompt, orchestrationResponse) {
   // Mediator APPROVES the result
   showAgentActivity('mediator', 'Mediator APPROVED - Delivering to user...');
   
-  // Add REAL AI response
-  const aiContent = aiResponse.data?.answer || aiResponse.answer || aiResponse.content || 
+  // Add REAL AI response (handle multiple response formats)
+  const aiContent = aiResponse.data?.answer || 
+                    aiResponse.answer || 
+                    aiResponse.content || 
+                    aiResponse.result || 
                     'I apologize, but I encountered an issue generating a response. Please try again.';
   
   state.messages.push({
@@ -459,13 +464,18 @@ async function runMediatorOnly(prompt, routing) {
     task.status = 'completed';
     task.progress = 100;
     task.thoughts = `Processed query using ${response.metadata?.models_used?.[0] || 'AI model'}`;
-    task.output = idx === 0 ? 'Classified query as: ' + (prompt.length > 50 ? 'complex' : 'simple') : response.data?.answer?.substring(0, 100) + '...';
+    task.output = idx === 0 ? 'Classified query as: ' + (prompt.length > 50 ? 'complex' : 'simple') : (response.data?.answer || response.answer || response.content || 'Task completed')?.substring(0, 100) + '...';
+    task.input = prompt.substring(0, 150);
   });
   
   renderOrchestrationTree();
   
-  // Add REAL AI response
-  const aiContent = response.data?.answer || response.answer || response.content || 'I apologize, but I encountered an issue generating a response. Please try again.';
+  // Add REAL AI response (handle multiple response formats)
+  const aiContent = response.data?.answer || 
+                    response.answer || 
+                    response.content || 
+                    response.result || 
+                    'I apologize, but I encountered an issue generating a response. Please try again.';
   
   state.messages.push({
     role: 'assistant',
@@ -708,6 +718,12 @@ function renderOrchestrationTree() {
                 ` : ''}
                 ${isExpanded ? `
                   <div class="mt-3 space-y-2 text-xs">
+                    ${task.input ? `
+                      <div>
+                        <div class="text-gray-500 font-semibold mb-1">📥 Input:</div>
+                        <div class="text-gray-300 bg-gray-900/50 p-2 rounded font-mono text-xs">${task.input}</div>
+                      </div>
+                    ` : ''}
                     <div>
                       <div class="text-gray-500 font-semibold mb-1">💭 Thoughts:</div>
                       <div class="text-gray-300 italic">${task.thoughts || 'No thoughts recorded'}</div>
@@ -723,7 +739,7 @@ function renderOrchestrationTree() {
                     ${task.output ? `
                       <div>
                         <div class="text-gray-500 font-semibold mb-1">📤 Output:</div>
-                        <div class="text-gray-300 bg-gray-800/50 p-2 rounded">${task.output}</div>
+                        <div class="text-gray-300 bg-gray-800/50 p-2 rounded font-mono text-xs">${task.output}</div>
                       </div>
                     ` : ''}
                   </div>
@@ -769,6 +785,12 @@ function renderOrchestrationTree() {
                 
                 ${isExpanded ? `
                   <div class="mt-3 space-y-2 text-xs">
+                    ${agent.input ? `
+                      <div>
+                        <div class="text-gray-500 font-semibold mb-1">📥 Input:</div>
+                        <div class="text-gray-300 bg-gray-900/50 p-2 rounded font-mono text-xs">${agent.input}</div>
+                      </div>
+                    ` : ''}
                     <div>
                       <div class="text-gray-500 font-semibold mb-1">💭 Thoughts:</div>
                       <div class="text-gray-300 italic">${agent.thoughts || 'No thoughts recorded'}</div>
@@ -784,7 +806,7 @@ function renderOrchestrationTree() {
                     ${agent.output ? `
                       <div>
                         <div class="text-gray-500 font-semibold mb-1">📤 Output:</div>
-                        <div class="text-gray-300 bg-gray-800/50 p-2 rounded">${agent.output}</div>
+                        <div class="text-gray-300 bg-gray-800/50 p-2 rounded font-mono text-xs">${agent.output}</div>
                       </div>
                     ` : ''}
                   </div>
@@ -973,6 +995,13 @@ function initResizableSidebar() {
 
 // WebSocket Connection Management
 function connectWebSocket() {
+  // Disable WebSocket in development (localhost) - only use in production
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('💡 WebSocket disabled in development mode');
+    console.log('🚀 Deploy to Cloudflare Pages for real-time updates via Durable Objects');
+    return;
+  }
+  
   // Check if WebSocket is supported
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const host = window.location.host;
