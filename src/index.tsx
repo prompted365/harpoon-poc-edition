@@ -1,16 +1,21 @@
 /**
  * Harpoon v2 - Next-Gen AI Orchestration
- * Cloudflare Workers + Hono + Multi-Provider AI
+ * Cloudflare Workers + Hono + Multi-Provider AI + Agents SDK
  */
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import type { Env } from './types';
+import type { AgentEnv } from './agents/types';
 import { AIClient } from './ai-client';
 import { SmartRouter } from './router';
 import { MODEL_REGISTRY, getModelById, getModelsByProvider, getModelsByTier } from './models';
 
-const app = new Hono<{ Bindings: Env }>();
+// Import agents for Durable Objects
+export { default as MediatorAgent } from './agents/MediatorAgent';
+export { default as OrchestratorAgent } from './agents/OrchestratorAgent';
+
+const app = new Hono<{ Bindings: Env | AgentEnv }>();
 
 // Enable CORS
 app.use('/api/*', cors());
@@ -169,6 +174,88 @@ app.post('/api/batch', async (c) => {
       failed: results.filter(r => !r.success).length,
       results
     });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ========================================
+// PHASE 2: AGENTS SDK ROUTES
+// Dual Orchestrator Architecture
+// ========================================
+
+// Mediator Agent Routes
+app.post('/api/agents/mediator/:userId', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+    const body = await c.req.json();
+    
+    // Get Mediator Durable Object
+    const env = c.env as AgentEnv;
+    if (!env.MEDIATOR) {
+      return c.json({ error: 'Agents not configured' }, 503);
+    }
+    
+    const id = env.MEDIATOR.idFromName(userId);
+    const mediator = env.MEDIATOR.get(id);
+    
+    // Forward request to Mediator
+    const response = await mediator.fetch(`https://mediator/covenant`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    
+    return new Response(response.body, {
+      status: response.status,
+      headers: response.headers
+    });
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// Orchestrator Agent Status
+app.get('/api/agents/orchestrator/status', async (c) => {
+  try {
+    const env = c.env as AgentEnv;
+    if (!env.ORCHESTRATOR) {
+      return c.json({ error: 'Agents not configured' }, 503);
+    }
+    
+    const id = env.ORCHESTRATOR.idFromName('main');
+    const orchestrator = env.ORCHESTRATOR.get(id);
+    
+    const response = await orchestrator.fetch('https://orchestrator/health');
+    const data = await response.json();
+    
+    return c.json(data);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// WebSocket upgrade for real-time agent communication
+app.get('/api/agents/ws/:userId', async (c) => {
+  try {
+    const userId = c.req.param('userId');
+    const env = c.env as AgentEnv;
+    
+    if (!env.MEDIATOR) {
+      return c.json({ error: 'Agents not configured' }, 503);
+    }
+    
+    // Get Mediator for this user
+    const id = env.MEDIATOR.idFromName(userId);
+    const mediator = env.MEDIATOR.get(id);
+    
+    // Upgrade to WebSocket and forward to Mediator
+    const upgradeHeader = c.req.header('Upgrade');
+    if (upgradeHeader !== 'websocket') {
+      return c.text('Expected Upgrade: websocket', 426);
+    }
+    
+    return mediator.fetch(c.req.raw);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }

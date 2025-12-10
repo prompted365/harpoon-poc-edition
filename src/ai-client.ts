@@ -67,13 +67,13 @@ export class AIClient {
    * Call Groq via AI Gateway
    */
   private async callGroq(request: AIRequest, modelId: string): Promise<any> {
-    const url = `${this.env.GROQ_GATEWAY_URL}/chat/completions`;
+    // Groq endpoint: https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/groq/chat/completions
+    const url = `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/groq/chat/completions`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.env.GROQ_API_KEY}`,
-        'cf-aig-authorization': `Bearer ${this.env.AI_GATEWAY_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -138,13 +138,13 @@ export class AIClient {
    * Call OpenAI via AI Gateway
    */
   private async callOpenAI(request: AIRequest, modelId: string): Promise<any> {
-    const url = `${this.env.OPENAI_GATEWAY_URL}/chat/completions`;
+    // OpenAI endpoint: https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/openai/chat/completions
+    const url = `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/openai/chat/completions`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.env.OPENAI_API_KEY}`,
-        'cf-aig-authorization': `Bearer ${this.env.AI_GATEWAY_TOKEN}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
