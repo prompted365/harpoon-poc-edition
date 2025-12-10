@@ -7,8 +7,9 @@ import type { ModelConfig } from './types';
 
 export const MODEL_REGISTRY: ModelConfig[] = [
   // TIER 1: PRIMARY - Groq Models (Ultra-fast, cost-effective)
+  // Note: When using via AI Gateway, keep the groq/ prefix
   {
-    id: 'llama-3.1-8b-instant',
+    id: 'groq/llama-3.1-8b-instant',
     provider: 'groq',
     tier: 'primary',
     speed: 560,
@@ -18,7 +19,7 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     description: '560 T/sec Llama 3.1 8B - Lightning fast for simple tasks'
   },
   {
-    id: 'llama-3.3-70b-versatile',
+    id: 'groq/llama-3.3-70b-versatile',
     provider: 'groq',
     tier: 'primary',
     speed: 280,
@@ -36,6 +37,16 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     contextWindow: 131072,
     capabilities: ['chat', 'code', 'reasoning', 'complex-tasks'],
     description: 'Qwen QwQ 32B - Advanced reasoning model'
+  },
+  {
+    id: 'groq/openai/gpt-oss-120b',
+    provider: 'groq',
+    tier: 'primary',
+    speed: 500,
+    costPer1M: 0.15,
+    contextWindow: 131072,
+    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks', 'function-calling'],
+    description: '500 T/sec GPT OSS 120B - High-power open model'
   },
   
   // FREE MODELS - Google AI Studio
