@@ -1,25 +1,31 @@
 # Durable Objects & WebSocket Configuration Guide
 
-## ✅ Configuration Completed
+## ✅ Configuration Status
 
-### 1. Durable Objects Bindings Added to `wrangler.jsonc`
+### 1. ⚠️ Durable Objects Bindings (Manual Configuration Required)
 
-```jsonc
-"durable_objects": {
-  "bindings": [
-    {
-      "name": "MEDIATOR",
-      "class_name": "MediatorAgent",
-      "script_name": "harpoon-v2"
-    },
-    {
-      "name": "ORCHESTRATOR",
-      "class_name": "OrchestratorAgent",
-      "script_name": "harpoon-v2"
-    }
-  ]
-}
-```
+**For Cloudflare Pages, DO bindings MUST be configured through the Dashboard:**
+
+Cloudflare Pages doesn't support DO bindings in `wrangler.jsonc`. Instead, configure them manually:
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. Navigate to **Workers & Pages** → **harpoon-v2**
+3. Go to **Settings** → **Functions** → **Durable Object bindings**
+4. Click **Add binding**
+
+**Add two bindings:**
+
+**Binding 1: MEDIATOR**
+- Variable name: `MEDIATOR`
+- Durable Object class: `MediatorAgent`
+- Durable Object namespace: Create new namespace or select existing
+
+**Binding 2: ORCHESTRATOR**
+- Variable name: `ORCHESTRATOR`
+- Durable Object class: `OrchestratorAgent`
+- Durable Object namespace: Create new namespace or select existing
+
+**Note:** You may need to first deploy the DO classes as a Worker, then bind them to Pages.
 
 ### 2. Durable Object Classes Exported in `src/index.tsx`
 
@@ -72,7 +78,7 @@ npx wrangler pages secret put OPENAI_API_KEY --project-name harpoon-v2
 
 ## 🔄 Deployment with Durable Objects
 
-### First-Time Deployment (Already Done):
+### Production Deployment:
 
 ```bash
 # Build the project
@@ -83,17 +89,29 @@ npx wrangler pages deploy dist --project-name harpoon-v2
 ```
 
 ### Production URL:
-https://01c798d3.harpoon-v2.pages.dev
+https://22d39a50.harpoon-v2.pages.dev
 
 ## 🧪 Testing WebSocket Connections
 
 ### 1. Check Agent Status:
 
 ```bash
-curl https://01c798d3.harpoon-v2.pages.dev/api/agents/status
+curl https://22d39a50.harpoon-v2.pages.dev/api/agents/status
 ```
 
-**Expected Response (Production with DOs):**
+**Expected Response (Without DO bindings - current state):**
+```json
+{
+  "agents_enabled": false,
+  "mode": "development",
+  "mediator": "unavailable",
+  "orchestrator": "unavailable",
+  "websockets": "not_supported",
+  "message": "Deploy to Cloudflare Pages for Durable Objects support"
+}
+```
+
+**Expected Response (With DO bindings configured):**
 ```json
 {
   "agents_enabled": true,
@@ -109,7 +127,7 @@ curl https://01c798d3.harpoon-v2.pages.dev/api/agents/status
 
 ```javascript
 // Connect to Mediator Agent WebSocket
-const ws = new WebSocket('wss://01c798d3.harpoon-v2.pages.dev/api/agents/mediator/test-user/ws');
+const ws = new WebSocket('wss://22d39a50.harpoon-v2.pages.dev/api/agents/mediator/test-user/ws');
 
 ws.onopen = () => {
   console.log('✅ WebSocket connected!');
@@ -141,7 +159,7 @@ ws.onerror = (error) => {
 ### 3. Test Full Orchestration (REST API):
 
 ```bash
-curl -X POST https://01c798d3.harpoon-v2.pages.dev/api/orchestrate/full \
+curl -X POST https://22d39a50.harpoon-v2.pages.dev/api/orchestrate/full \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "Delegate a covenant for sub-agent spawning of sub-agents plz and ensure each returns a color of the rainbow and output to centralized context in gradient order starting with red",
@@ -187,7 +205,7 @@ Error: WebSocket connection failed
   "message": "Deploy to Cloudflare Pages for full agent functionality"
 }
 ```
-**Solution:** This is expected in local development. Deploy to Cloudflare Pages to enable DOs.
+**Solution:** This is expected until DO bindings are configured in the Dashboard. Follow the configuration steps above.
 
 ### Missing Authorization Header (Gemini):
 ```
@@ -207,10 +225,10 @@ npx wrangler pages secret put GEMINI_API_KEY --project-name harpoon-v2
 
 ## ✅ Verification Checklist
 
-- [x] Durable Objects bindings added to `wrangler.jsonc`
 - [x] DO classes exported in `src/index.tsx`
 - [x] Environment variables configured as Cloudflare secrets
 - [x] Project deployed to Cloudflare Pages
+- [ ] **Durable Objects bindings configured in Dashboard** (Manual step required)
 - [ ] WebSocket connection tested in browser
 - [ ] Full orchestration tested with rainbow covenant
 - [ ] Gemini API key added (if needed)
@@ -218,10 +236,36 @@ npx wrangler pages secret put GEMINI_API_KEY --project-name harpoon-v2
 
 ## 🎯 Next Steps
 
-1. **Test WebSocket in production:** Visit https://01c798d3.harpoon-v2.pages.dev
-2. **Add Gemini API key** (if needed):
+1. **Configure DO bindings in Dashboard:** Follow steps in section 1 to add MEDIATOR and ORCHESTRATOR bindings
+2. **Test production UI:** Visit https://22d39a50.harpoon-v2.pages.dev
+3. **Add Gemini API key** (if needed):
    ```bash
    npx wrangler pages secret put GEMINI_API_KEY --project-name harpoon-v2
    ```
-3. **Test rainbow covenant:** Use the delegated sub-agent spawning query
-4. **Monitor real-time updates:** Watch the Orchestration Tree update live via WebSocket
+4. **Test rainbow covenant:** Use the delegated sub-agent spawning query
+5. **Verify WebSocket:** After DO bindings are configured, test WebSocket connections
+6. **Monitor real-time updates:** Watch the Orchestration Tree update live via WebSocket
+
+## 📝 Quick Summary
+
+✅ **Completed:**
+- Deployed to Cloudflare Pages: https://22d39a50.harpoon-v2.pages.dev
+- DO classes exported and ready
+- Environment secrets configured
+- WebSocket code ready to activate
+
+⚠️ **Requires Manual Configuration:**
+- Durable Objects bindings in Cloudflare Dashboard
+- Optional: Gemini API key for direct Gemini model calls
+
+🚀 **Ready to Use (Without DOs):**
+- Smart routing with multiple AI providers
+- Command Palette (Cmd+K / Ctrl+K)
+- 3-column UI layout
+- All orchestration patterns work via REST API
+
+🔮 **Coming Online (With DOs):**
+- Real-time WebSocket updates
+- Persistent covenant tracking
+- Live orchestration tree updates
+- Multi-agent swarm coordination
