@@ -303,8 +303,8 @@ async function runMediatorOnly(prompt, routing) {
   // Add response
   state.messages.push({
     role: 'assistant',
-    content: response.data.answer,
-    metadata: response.metadata,
+    content: response.answer || response.data?.answer || 'Response generated',
+    metadata: response.metadata || {},
     timestamp: Date.now()
   });
   
@@ -761,6 +761,10 @@ function toggleAgent(agentId) {
 // Resizable sidebar functionality
 function initResizableSidebar() {
   const sidebar = document.getElementById('sidebar');
+  if (!sidebar) {
+    console.warn('Sidebar element not found, skipping resize initialization');
+    return;
+  }
   const resizer = document.createElement('div');
   resizer.className = 'sidebar-resizer';
   resizer.innerHTML = '<div class="resize-handle"></div>';

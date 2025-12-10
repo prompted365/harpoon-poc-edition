@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'harpoon-v2',
       script: 'npx',
-      args: 'tsx server.ts',
+      args: 'wrangler pages dev dist --ip 0.0.0.0 --port 3000 --local',
       env: {
         NODE_ENV: 'development',
         PORT: 3000
