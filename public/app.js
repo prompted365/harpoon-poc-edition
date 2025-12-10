@@ -17,7 +17,9 @@ const state = {
     tree: []
   },
   commandPaletteOpen: false,
-  insightsExpanded: false
+  insightsExpanded: false,
+  expandedAgents: new Set(), // Track which agents are expanded
+  sidebarWidth: 400 // Resizable sidebar width
 };
 
 // ==========================================
@@ -251,11 +253,29 @@ async function runMediatorOnly(prompt, routing) {
   state.orchestration.mediator.tasks = subAgents.map(name => ({
     id: `${name}-${Date.now()}`,
     name,
-    status: 'running',
-    progress: 0
+    status: 'pending',
+    progress: 0,
+    thoughts: 'Initializing...',
+    actions: [],
+    output: null
   }));
   
   renderOrchestrationTree();
+  
+  // Animate agent execution with thoughts/actions
+  for (let task of state.orchestration.mediator.tasks) {
+    task.status = 'running';
+    task.thoughts = `Analyzing ${prompt.substring(0, 30)}...`;
+    task.actions = ['Reading input', 'Processing context'];
+    renderOrchestrationTree();
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    task.progress = 50;
+    task.thoughts = 'Generating response...';
+    task.actions.push('Executing task');
+    renderOrchestrationTree();
+    await new Promise(resolve => setTimeout(resolve, 400));
+  }
   
   // Execute with smart routing
   const response = await fetch('/api/orchestrate/smart', {
@@ -268,6 +288,8 @@ async function runMediatorOnly(prompt, routing) {
   state.orchestration.mediator.tasks.forEach(task => {
     task.status = 'completed';
     task.progress = 100;
+    task.thoughts = 'Task completed successfully';
+    task.output = 'Response generated';
   });
   
   renderOrchestrationTree();
@@ -291,12 +313,14 @@ async function runMediatorOnly(prompt, routing) {
 async function runFullOrchestration(prompt, routing) {
   showToast('🎭 Full Orchestration: Dual Orchestrator Active', 'info');
   
-  // Mediator delegates to Orchestrator
+  // Mediator delegates to Orchestrator - UPDATE COVENANT
   showAgentActivity('mediator', 'Delegating to Orchestrator...');
+  state.covenant.mediator_decision += ' → Delegating to Orchestrator for complex workflow';
+  renderCovenant();
   
-  setTimeout(() => {
-    showAgentActivity('orchestrator', 'Planning sub-agent swarm...');
-  }, 800);
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  showAgentActivity('orchestrator', 'Planning sub-agent swarm...');
   
   // Simulate orchestrator creating sub-agent plan
   const subAgentPlan = [
@@ -307,24 +331,34 @@ async function runFullOrchestration(prompt, routing) {
     { type: 'coordinator', role: 'Synthesize results' }
   ];
   
+  // Update covenant with orchestration plan
+  state.covenant.orchestration_plan = subAgentPlan.map(a => a.role).join(' → ');
+  renderCovenant();
+  
   state.orchestration.orchestrator.subAgents = subAgentPlan.map((agent, i) => ({
     id: `${agent.type}-${Date.now()}-${i}`,
     type: agent.type,
     role: agent.role,
     status: 'pending',
     progress: 0,
+    thoughts: 'Waiting for execution...',
+    actions: [],
+    output: null,
     children: agent.parallel ? Array(agent.count).fill(null).map((_, j) => ({
       id: `${agent.type}-child-${j}`,
       type: `${agent.type}-${j+1}`,
       status: 'pending',
-      progress: 0
+      progress: 0,
+      thoughts: 'Waiting...',
+      actions: [],
+      output: null
     })) : []
   }));
   
   renderOrchestrationTree();
   
-  // Execute orchestrator-workers pattern
-  const response = await fetch('/api/orchestrate/workers', {
+  // Start async API call (non-blocking)
+  const responsePromise = fetch('/api/orchestrate/workers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
@@ -334,33 +368,60 @@ async function runFullOrchestration(prompt, routing) {
     })
   }).then(r => r.json());
   
-  // Animate sub-agent completion
-  for (let agent of state.orchestration.orchestrator.subAgents) {
+  // Animate sub-agents appearing in BATCH CHUNKS (non-blocking)
+  for (let i = 0; i < state.orchestration.orchestrator.subAgents.length; i++) {
+    const agent = state.orchestration.orchestrator.subAgents[i];
+    
+    // Agent appears and starts thinking
     agent.status = 'running';
+    agent.thoughts = `Starting ${agent.type}: ${agent.role}`;
+    agent.actions = ['Initializing', 'Loading context'];
+    renderOrchestrationTree();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Update progress
+    agent.progress = 30;
+    agent.thoughts = `Executing ${agent.role.toLowerCase()}...`;
+    agent.actions.push('Processing');
     renderOrchestrationTree();
     await new Promise(resolve => setTimeout(resolve, 300));
     
     if (agent.children.length > 0) {
-      // Parallel execution
-      agent.children.forEach((child, i) => {
-        setTimeout(() => {
-          child.status = 'running';
-          renderOrchestrationTree();
-          setTimeout(() => {
-            child.status = 'completed';
-            child.progress = 100;
-            renderOrchestrationTree();
-          }, 400);
-        }, i * 150);
-      });
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Parallel execution - spawn children in chunks
+      agent.thoughts = 'Spawning parallel sub-agents...';
+      renderOrchestrationTree();
+      
+      for (let j = 0; j < agent.children.length; j++) {
+        const child = agent.children[j];
+        child.status = 'running';
+        child.thoughts = `Parallel execution ${j+1}/${agent.children.length}`;
+        child.actions = ['Working on sub-task'];
+        renderOrchestrationTree();
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        // Complete child
+        child.status = 'completed';
+        child.progress = 100;
+        child.thoughts = 'Sub-task completed';
+        child.output = `Result ${j+1}`;
+        renderOrchestrationTree();
+      }
+      
+      agent.thoughts = 'All parallel sub-agents completed';
+      agent.actions.push('Merging results');
     }
     
+    // Complete agent
     agent.status = 'completed';
     agent.progress = 100;
+    agent.thoughts = `${agent.type} task completed successfully`;
+    agent.output = `${agent.role} complete`;
     renderOrchestrationTree();
     await new Promise(resolve => setTimeout(resolve, 200));
   }
+  
+  // Wait for API response
+  const response = await responsePromise;
   
   // Add response
   state.messages.push({
@@ -375,7 +436,6 @@ async function runFullOrchestration(prompt, routing) {
   });
   
   state.covenant.status = 'completed';
-  state.covenant.orchestration_plan = response.data.plan;
   renderCovenant();
   renderMessages();
   
@@ -451,24 +511,54 @@ function renderOrchestrationTree() {
   if (state.orchestration.mediator.tasks.length > 0) {
     html += `
       <div class="tree-node">
-        <div class="flex items-center gap-2 mb-2">
+        <div class="flex items-center gap-2 mb-2 cursor-pointer hover:bg-gray-800/30 p-2 rounded" onclick="toggleSection('mediator')">
+          <span class="text-lg">${state.expandedAgents.has('mediator') ? '▼' : '▶'}</span>
           <span class="text-lg">👤</span>
           <span class="text-sm font-semibold text-white">Mediator</span>
+          <span class="text-xs text-gray-500 ml-2">(${state.orchestration.mediator.tasks.length} tasks)</span>
         </div>
-        <div class="ml-6 space-y-2">
-          ${state.orchestration.mediator.tasks.map(task => `
-            <div class="agent-card ${task.status}">
-              <div class="flex items-center justify-between">
-                <span class="text-sm">${task.name}</span>
-                <span class="status-badge ${task.status}">${task.status}</span>
-              </div>
-              ${task.progress > 0 ? `
-                <div class="progress-bar mt-2">
-                  <div class="progress-fill" style="width: ${task.progress}%"></div>
+        <div class="ml-6 space-y-2 ${state.expandedAgents.has('mediator') ? '' : 'hidden'}">
+          ${state.orchestration.mediator.tasks.map(task => {
+            const isExpanded = state.expandedAgents.has(task.id);
+            return `
+              <div class="agent-card ${task.status}">
+                <div class="flex items-center justify-between cursor-pointer" onclick="toggleAgent('${task.id}')">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs">${isExpanded ? '▼' : '▶'}</span>
+                    <span class="text-sm">${task.name}</span>
+                  </div>
+                  <span class="status-badge ${task.status}">${task.status}</span>
                 </div>
-              ` : ''}
-            </div>
-          `).join('')}
+                ${task.progress > 0 ? `
+                  <div class="progress-bar mt-2">
+                    <div class="progress-fill" style="width: ${task.progress}%"></div>
+                  </div>
+                ` : ''}
+                ${isExpanded ? `
+                  <div class="mt-3 space-y-2 text-xs">
+                    <div>
+                      <div class="text-gray-500 font-semibold mb-1">💭 Thoughts:</div>
+                      <div class="text-gray-300 italic">${task.thoughts || 'No thoughts recorded'}</div>
+                    </div>
+                    ${task.actions && task.actions.length > 0 ? `
+                      <div>
+                        <div class="text-gray-500 font-semibold mb-1">⚡ Actions:</div>
+                        <ul class="text-gray-300 list-disc list-inside">
+                          ${task.actions.map(a => `<li>${a}</li>`).join('')}
+                        </ul>
+                      </div>
+                    ` : ''}
+                    ${task.output ? `
+                      <div>
+                        <div class="text-gray-500 font-semibold mb-1">📤 Output:</div>
+                        <div class="text-gray-300 bg-gray-800/50 p-2 rounded">${task.output}</div>
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -478,36 +568,83 @@ function renderOrchestrationTree() {
   if (state.orchestration.orchestrator.subAgents.length > 0) {
     html += `
       <div class="tree-node mt-4">
-        <div class="flex items-center gap-2 mb-2">
+        <div class="flex items-center gap-2 mb-2 cursor-pointer hover:bg-gray-800/30 p-2 rounded" onclick="toggleSection('orchestrator')">
+          <span class="text-lg">${state.expandedAgents.has('orchestrator') ? '▼' : '▶'}</span>
           <span class="text-lg">🎭</span>
           <span class="text-sm font-semibold text-white">Orchestrator</span>
+          <span class="text-xs text-gray-500 ml-2">(${state.orchestration.orchestrator.subAgents.length} agents)</span>
         </div>
-        <div class="ml-6 space-y-2">
-          ${state.orchestration.orchestrator.subAgents.map(agent => `
-            <div class="agent-card ${agent.status}">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-sm font-semibold">${agent.type}</span>
-                <span class="status-badge ${agent.status}">${agent.status}</span>
-              </div>
-              <div class="text-xs text-gray-400">${agent.role}</div>
-              ${agent.progress > 0 ? `
-                <div class="progress-bar mt-2">
-                  <div class="progress-fill" style="width: ${agent.progress}%"></div>
-                </div>
-              ` : ''}
-              
-              ${agent.children.length > 0 ? `
-                <div class="ml-4 mt-2 space-y-1">
-                  ${agent.children.map(child => `
-                    <div class="child-agent ${child.status}">
-                      <span class="text-xs">${child.type}</span>
-                      <span class="status-dot ${child.status}"></span>
+        <div class="ml-6 space-y-2 ${state.expandedAgents.has('orchestrator') ? '' : 'hidden'}">
+          ${state.orchestration.orchestrator.subAgents.map(agent => {
+            const isExpanded = state.expandedAgents.has(agent.id);
+            return `
+              <div class="agent-card ${agent.status}">
+                <div class="cursor-pointer" onclick="toggleAgent('${agent.id}')">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs">${isExpanded ? '▼' : '▶'}</span>
+                      <span class="text-sm font-semibold">${agent.type}</span>
                     </div>
-                  `).join('')}
+                    <span class="status-badge ${agent.status}">${agent.status}</span>
+                  </div>
+                  <div class="text-xs text-gray-400 ml-5">${agent.role}</div>
                 </div>
-              ` : ''}
-            </div>
-          `).join('')}
+                ${agent.progress > 0 ? `
+                  <div class="progress-bar mt-2">
+                    <div class="progress-fill" style="width: ${agent.progress}%"></div>
+                  </div>
+                ` : ''}
+                
+                ${isExpanded ? `
+                  <div class="mt-3 space-y-2 text-xs">
+                    <div>
+                      <div class="text-gray-500 font-semibold mb-1">💭 Thoughts:</div>
+                      <div class="text-gray-300 italic">${agent.thoughts || 'No thoughts recorded'}</div>
+                    </div>
+                    ${agent.actions && agent.actions.length > 0 ? `
+                      <div>
+                        <div class="text-gray-500 font-semibold mb-1">⚡ Actions:</div>
+                        <ul class="text-gray-300 list-disc list-inside">
+                          ${agent.actions.map(a => `<li>${a}</li>`).join('')}
+                        </ul>
+                      </div>
+                    ` : ''}
+                    ${agent.output ? `
+                      <div>
+                        <div class="text-gray-500 font-semibold mb-1">📤 Output:</div>
+                        <div class="text-gray-300 bg-gray-800/50 p-2 rounded">${agent.output}</div>
+                      </div>
+                    ` : ''}
+                  </div>
+                ` : ''}
+                
+                ${agent.children.length > 0 ? `
+                  <div class="ml-4 mt-2 space-y-1 border-l-2 border-gray-700 pl-2">
+                    ${agent.children.map(child => {
+                      const childExpanded = state.expandedAgents.has(child.id);
+                      return `
+                        <div class="child-agent ${child.status} p-2 cursor-pointer" onclick="event.stopPropagation(); toggleAgent('${child.id}')">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                              <span class="text-xs">${childExpanded ? '▼' : '▶'}</span>
+                              <span class="text-xs">${child.type}</span>
+                            </div>
+                            <span class="status-dot ${child.status}"></span>
+                          </div>
+                          ${childExpanded ? `
+                            <div class="mt-2 space-y-1 text-xs">
+                              <div class="text-gray-400 italic">${child.thoughts || 'Working...'}</div>
+                              ${child.output ? `<div class="text-gray-300">\u2713 ${child.output}</div>` : ''}
+                            </div>
+                          ` : ''}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -597,12 +734,75 @@ function showOrchestrationDetails(timestamp) {
   alert(`Orchestration Plan:\n\n${JSON.stringify(msg.orchestration.plan, null, 2)}`);
 }
 
+function toggleSection(sectionId) {
+  if (state.expandedAgents.has(sectionId)) {
+    state.expandedAgents.delete(sectionId);
+  } else {
+    state.expandedAgents.add(sectionId);
+  }
+  renderOrchestrationTree();
+}
+
+function toggleAgent(agentId) {
+  if (state.expandedAgents.has(agentId)) {
+    state.expandedAgents.delete(agentId);
+  } else {
+    state.expandedAgents.add(agentId);
+  }
+  renderOrchestrationTree();
+}
+
+// Resizable sidebar functionality
+function initResizableSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const resizer = document.createElement('div');
+  resizer.className = 'sidebar-resizer';
+  resizer.innerHTML = '<div class="resize-handle"></div>';
+  sidebar.insertBefore(resizer, sidebar.firstChild);
+  
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+  
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = sidebar.offsetWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    
+    const width = startWidth + (startX - e.clientX);
+    if (width >= 300 && width <= 800) {
+      state.sidebarWidth = width;
+      sidebar.style.width = `${width}px`;
+    }
+  });
+  
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
+}
+
 // ==========================================
 // INITIALIZATION
 // ==========================================
 
 document.addEventListener('DOMContentLoaded', () => {
   initCommandPalette();
+  initResizableSidebar();
+  
+  // Expand sections by default
+  state.expandedAgents.add('mediator');
+  state.expandedAgents.add('orchestrator');
+  
   renderMessages();
   renderCovenant();
   renderOrchestrationTree();
@@ -623,4 +823,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCommandPalette();
   
   console.log('🚀 Harpoon v2 UI Loaded - Press Cmd+K for command palette');
+  console.log('💡 Click agent headers to expand/collapse details');
+  console.log('↔️ Drag sidebar edge to resize');
 });
