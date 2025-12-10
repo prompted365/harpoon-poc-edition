@@ -70,12 +70,24 @@ export class AIClient {
     // Groq endpoint: https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/groq/chat/completions
     const url = `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/groq/chat/completions`;
     
+    // Build headers - Gateway authentication + Provider API key
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    // Add AI Gateway authentication if token is available
+    if (this.env.AI_GATEWAY_TOKEN && this.env.AI_GATEWAY_TOKEN !== 'your-gateway-token-here') {
+      headers['cf-aig-authorization'] = `Bearer ${this.env.AI_GATEWAY_TOKEN}`;
+    }
+    
+    // Add provider API key if available
+    if (this.env.GROQ_API_KEY && this.env.GROQ_API_KEY !== 'your-groq-api-key-here') {
+      headers['Authorization'] = `Bearer ${this.env.GROQ_API_KEY}`;
+    }
+    
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
         model: modelId,
         messages: [{ role: 'user', content: request.prompt }],
@@ -141,12 +153,24 @@ export class AIClient {
     // OpenAI endpoint: https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/openai/chat/completions
     const url = `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/openai/chat/completions`;
     
+    // Build headers - Gateway authentication + Provider API key
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    // Add AI Gateway authentication if token is available
+    if (this.env.AI_GATEWAY_TOKEN && this.env.AI_GATEWAY_TOKEN !== 'your-gateway-token-here') {
+      headers['cf-aig-authorization'] = `Bearer ${this.env.AI_GATEWAY_TOKEN}`;
+    }
+    
+    // Add provider API key if available
+    if (this.env.OPENAI_API_KEY && this.env.OPENAI_API_KEY !== 'your-openai-api-key-here') {
+      headers['Authorization'] = `Bearer ${this.env.OPENAI_API_KEY}`;
+    }
+    
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({
         model: modelId,
         messages: [{ role: 'user', content: request.prompt }],

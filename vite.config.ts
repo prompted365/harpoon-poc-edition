@@ -10,5 +10,14 @@ export default defineConfig({
       adapter,
       entry: 'src/index.tsx'
     })
-  ]
+  ],
+  build: {
+    rollupOptions: {
+      external: [
+        'cloudflare:email',
+        'cloudflare:sockets',
+        'cloudflare:workers'
+      ]
+    }
+  }
 })

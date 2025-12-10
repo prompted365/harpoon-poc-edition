@@ -8,14 +8,17 @@ import { cors } from 'hono/cors';
 import type { Env } from './types';
 import type { AgentEnv } from './agents/types';
 import { AIClient } from './ai-client';
+import { UnifiedAIClient } from './ai-client-unified';
 import { SmartRouter } from './router';
 import { MODEL_REGISTRY, getModelById, getModelsByProvider, getModelsByTier } from './models';
+import {
+  ParallelizationPattern,
+  OrchestratorWorkersPattern,
+  EvaluatorOptimizerPattern,
+  SmartRouterPattern
+} from './orchestration/patterns';
 
-// Import agents for Durable Objects
-export { default as MediatorAgent } from './agents/MediatorAgent';
-export { default as OrchestratorAgent } from './agents/OrchestratorAgent';
-
-const app = new Hono<{ Bindings: Env | AgentEnv }>();
+const app = new Hono<{ Bindings: Env }>();
 
 // Enable CORS
 app.use('/api/*', cors());
@@ -23,7 +26,7 @@ app.use('/api/*', cors());
 // Health check endpoint
 app.get('/api/health', async (c) => {
   try {
-    const client = new AIClient(c.env);
+    const client = new UnifiedAIClient(c.env);
     const health = await client.healthCheck();
     
     return c.json({
@@ -114,8 +117,8 @@ app.post('/api/chat', async (c) => {
       max_tokens: body.max_tokens
     });
 
-    // Execute AI request
-    const client = new AIClient(c.env);
+    // Execute AI request using unified endpoint
+    const client = new UnifiedAIClient(c.env);
     const response = await client.chat({
       prompt: body.prompt,
       model: routing.selected_model.id,
@@ -148,7 +151,7 @@ app.post('/api/batch', async (c) => {
       return c.json({ error: 'requests array is required' }, 400);
     }
 
-    const client = new AIClient(c.env);
+    const client = new UnifiedAIClient(c.env);
     const router = new SmartRouter();
 
     const results = await Promise.all(
@@ -180,85 +183,113 @@ app.post('/api/batch', async (c) => {
 });
 
 // ========================================
-// PHASE 2: AGENTS SDK ROUTES
-// Dual Orchestrator Architecture
+// ORCHESTRATION PATTERNS
+// Advanced AI coordination patterns
 // ========================================
 
-// Mediator Agent Routes
-app.post('/api/agents/mediator/:userId', async (c) => {
+// Pattern 1: Parallelization - Execute multiple tasks simultaneously
+app.post('/api/orchestrate/parallel', async (c) => {
   try {
-    const userId = c.req.param('userId');
     const body = await c.req.json();
     
-    // Get Mediator Durable Object
-    const env = c.env as AgentEnv;
-    if (!env.MEDIATOR) {
-      return c.json({ error: 'Agents not configured' }, 503);
+    if (!Array.isArray(body.requests)) {
+      return c.json({ error: 'requests array is required' }, 400);
     }
+
+    const client = new UnifiedAIClient(c.env);
+    const pattern = new ParallelizationPattern(client);
     
-    const id = env.MEDIATOR.idFromName(userId);
-    const mediator = env.MEDIATOR.get(id);
+    const result = await pattern.execute(body.requests);
     
-    // Forward request to Mediator
-    const response = await mediator.fetch(`https://mediator/covenant`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    
-    return new Response(response.body, {
-      status: response.status,
-      headers: response.headers
-    });
+    return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
 });
 
-// Orchestrator Agent Status
-app.get('/api/agents/orchestrator/status', async (c) => {
+// Pattern 2: Orchestrator-Workers - Delegate tasks to specialized workers
+app.post('/api/orchestrate/workers', async (c) => {
   try {
-    const env = c.env as AgentEnv;
-    if (!env.ORCHESTRATOR) {
-      return c.json({ error: 'Agents not configured' }, 503);
+    const body = await c.req.json();
+    
+    if (!body.prompt) {
+      return c.json({ error: 'prompt is required' }, 400);
     }
+
+    const client = new UnifiedAIClient(c.env);
+    const pattern = new OrchestratorWorkersPattern(
+      client,
+      body.orchestrator_model,
+      body.worker_model
+    );
     
-    const id = env.ORCHESTRATOR.idFromName('main');
-    const orchestrator = env.ORCHESTRATOR.get(id);
+    const result = await pattern.execute(body.prompt, body.context);
     
-    const response = await orchestrator.fetch('https://orchestrator/health');
-    const data = await response.json();
-    
-    return c.json(data);
+    return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
 });
 
-// WebSocket upgrade for real-time agent communication
-app.get('/api/agents/ws/:userId', async (c) => {
+// Pattern 3: Evaluator-Optimizer - Iterative quality improvement
+app.post('/api/orchestrate/optimize', async (c) => {
   try {
-    const userId = c.req.param('userId');
-    const env = c.env as AgentEnv;
+    const body = await c.req.json();
     
-    if (!env.MEDIATOR) {
-      return c.json({ error: 'Agents not configured' }, 503);
+    if (!body.task) {
+      return c.json({ error: 'task is required' }, 400);
     }
+
+    const client = new UnifiedAIClient(c.env);
+    const pattern = new EvaluatorOptimizerPattern(
+      client,
+      body.generator_model,
+      body.evaluator_model,
+      body.max_iterations
+    );
     
-    // Get Mediator for this user
-    const id = env.MEDIATOR.idFromName(userId);
-    const mediator = env.MEDIATOR.get(id);
+    const result = await pattern.execute(body.task, body.quality_threshold || 8.0);
     
-    // Upgrade to WebSocket and forward to Mediator
-    const upgradeHeader = c.req.header('Upgrade');
-    if (upgradeHeader !== 'websocket') {
-      return c.text('Expected Upgrade: websocket', 426);
-    }
-    
-    return mediator.fetch(c.req.raw);
+    return c.json(result);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);
   }
+});
+
+// Pattern 4: Smart Router with Fallback
+app.post('/api/orchestrate/smart', async (c) => {
+  try {
+    const body = await c.req.json();
+    
+    if (!body.prompt) {
+      return c.json({ error: 'prompt is required' }, 400);
+    }
+
+    const client = new UnifiedAIClient(c.env);
+    const router = new SmartRouter();
+    const pattern = new SmartRouterPattern(client, router);
+    
+    const result = await pattern.execute(body.prompt, body.preferences);
+    
+    return c.json(result);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+});
+
+// ========================================
+// AGENTS SDK ROUTES (Production Only)
+// For development, these return 503
+// For production deployment, use worker.ts
+// ========================================
+
+app.get('/api/agents/status', (c) => {
+  return c.json({
+    agents_enabled: false,
+    mode: 'development',
+    message: 'Agents SDK is only available in Cloudflare Workers production deployment',
+    recommendation: 'Use orchestration patterns (/api/orchestrate/*) for similar functionality'
+  });
 });
 
 // Root route with HTML UI
