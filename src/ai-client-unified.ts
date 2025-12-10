@@ -51,53 +51,43 @@ export class UnifiedAIClient {
   }
 
   /**
-   * Call unified OpenAI-compatible endpoint
-   * https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/compat/chat/completions
+   * Call provider-specific endpoint with BYOK
+   * BYOK = Keys already stored in Cloudflare AI Gateway Dashboard
+   * Use cf-aig-authorization header, NOT Authorization header
    */
   private async callUnifiedEndpoint(
     request: AIRequest,
     modelId: string,
     provider: AIProvider
   ): Promise<any> {
-    // Unified endpoint
-    const url = `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/compat/chat/completions`;
-    
-    // Map our provider names to gateway format
-    const providerModelMap: Record<AIProvider, string> = {
-      'groq': `groq/${modelId}`,
-      'workers-ai': `workers-ai/${modelId}`,
-      'openai': `openai/${modelId}`
+    // Provider-specific endpoints (BYOK format)
+    // https://gateway.ai.cloudflare.com/v1/{account}/{gateway}/{provider}/chat/completions
+    const providerEndpoints: Record<AIProvider, string> = {
+      'groq': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/groq/chat/completions`,
+      'openai': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/openai/chat/completions`,
+      'workers-ai': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/workers-ai/v1/chat/completions`
     };
     
-    const unifiedModel = providerModelMap[provider] || modelId;
+    const url = providerEndpoints[provider];
     
-    // Build headers for AI Gateway
+    // Build headers - CRITICAL: Use cf-aig-authorization for BYOK
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
     
-    // CRITICAL: For BYOK (Bring Your Own Keys), use cf-aig-authorization
-    // Keys are stored in Cloudflare AI Gateway, not in environment variables
-    if (this.env.AI_GATEWAY_TOKEN && this.env.AI_GATEWAY_TOKEN !== 'your-gateway-token-here') {
+    // For BYOK: Use cf-aig-authorization header with your AI Gateway token
+    // The gateway will use the provider keys you stored in the dashboard
+    if (this.env.AI_GATEWAY_TOKEN) {
       headers['cf-aig-authorization'] = `Bearer ${this.env.AI_GATEWAY_TOKEN}`;
     }
     
-    // Only add provider-specific Authorization if NOT using BYOK
-    // If using BYOK, AI Gateway will handle authentication automatically
-    // Uncomment these lines only if you want to pass keys directly instead of BYOK:
-    // if (provider === 'groq' && this.env.GROQ_API_KEY) {
-    //   headers['Authorization'] = `Bearer ${this.env.GROQ_API_KEY}`;
-    // } else if (provider === 'openai' && this.env.OPENAI_API_KEY) {
-    //   headers['Authorization'] = `Bearer ${this.env.OPENAI_API_KEY}`;
-    // }
-    
-    console.log(`🌐 Calling unified endpoint: ${unifiedModel}`);
+    console.log(`🌐 Calling ${provider} via AI Gateway (BYOK): ${modelId}`);
     
     const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        model: unifiedModel,
+        model: modelId,
         messages: [{ role: 'user', content: request.prompt }],
         temperature: request.temperature ?? 0.7,
         max_tokens: request.max_tokens ?? 1024,
@@ -107,8 +97,8 @@ export class UnifiedAIClient {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error(`Unified API error (${response.status}):`, error);
-      throw new Error(`Unified API error: ${error}`);
+      console.error(`${provider} API error (${response.status}):`, error);
+      throw new Error(`${provider} API error: ${error}`);
     }
 
     const data = await response.json();
