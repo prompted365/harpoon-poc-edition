@@ -71,25 +71,25 @@ export class UnifiedAIClient {
     
     const unifiedModel = providerModelMap[provider] || modelId;
     
-    // Build headers
+    // Build headers for AI Gateway
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
     
-    // CRITICAL: Use cf-aig-authorization with AI Gateway token
+    // CRITICAL: For BYOK (Bring Your Own Keys), use cf-aig-authorization
+    // Keys are stored in Cloudflare AI Gateway, not in environment variables
     if (this.env.AI_GATEWAY_TOKEN && this.env.AI_GATEWAY_TOKEN !== 'your-gateway-token-here') {
       headers['cf-aig-authorization'] = `Bearer ${this.env.AI_GATEWAY_TOKEN}`;
     }
     
-    // If provider keys are stored in Cloudflare (BYOK), we don't need Authorization header
-    // If not using BYOK, add provider API key
-    if (provider === 'groq' && this.env.GROQ_API_KEY && this.env.GROQ_API_KEY !== 'your-groq-api-key-here') {
-      headers['Authorization'] = `Bearer ${this.env.GROQ_API_KEY}`;
-    } else if (provider === 'openai' && this.env.OPENAI_API_KEY && this.env.OPENAI_API_KEY !== 'your-openai-api-key-here') {
-      headers['Authorization'] = `Bearer ${this.env.OPENAI_API_KEY}`;
-    } else if (provider === 'workers-ai' && this.env.WORKERS_AI_TOKEN && this.env.WORKERS_AI_TOKEN !== 'your-workers-ai-token-here') {
-      headers['Authorization'] = `Bearer ${this.env.WORKERS_AI_TOKEN}`;
-    }
+    // Only add provider-specific Authorization if NOT using BYOK
+    // If using BYOK, AI Gateway will handle authentication automatically
+    // Uncomment these lines only if you want to pass keys directly instead of BYOK:
+    // if (provider === 'groq' && this.env.GROQ_API_KEY) {
+    //   headers['Authorization'] = `Bearer ${this.env.GROQ_API_KEY}`;
+    // } else if (provider === 'openai' && this.env.OPENAI_API_KEY) {
+    //   headers['Authorization'] = `Bearer ${this.env.OPENAI_API_KEY}`;
+    // }
     
     console.log(`🌐 Calling unified endpoint: ${unifiedModel}`);
     
