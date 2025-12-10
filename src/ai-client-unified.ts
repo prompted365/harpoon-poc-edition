@@ -65,7 +65,8 @@ export class UnifiedAIClient {
     const providerEndpoints: Record<AIProvider, string> = {
       'groq': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/groq/chat/completions`,
       'openai': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/openai/chat/completions`,
-      'workers-ai': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/workers-ai/v1/chat/completions`
+      'workers-ai': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/workers-ai/v1/chat/completions`,
+      'google-ai-studio': `https://gateway.ai.cloudflare.com/v1/${this.env.CLOUDFLARE_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/google-ai-studio/v1beta/chat/completions`
     };
     
     const url = providerEndpoints[provider];

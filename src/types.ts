@@ -18,7 +18,7 @@ export interface Env {
 }
 
 // AI Provider Types
-export type AIProvider = 'groq' | 'workers-ai' | 'openai';
+export type AIProvider = 'groq' | 'workers-ai' | 'openai' | 'google-ai-studio';
 
 export type ModelTier = 'primary' | 'edge' | 'flagship';
 

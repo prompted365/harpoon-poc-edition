@@ -28,39 +28,31 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     description: '280 T/sec Llama 3.3 70B - Balanced power and speed'
   },
   {
-    id: 'openai/gpt-oss-20b',
-    provider: 'groq',
-    tier: 'primary',
-    speed: 1000,
-    costPer1M: 0.075,
-    contextWindow: 131072,
-    capabilities: ['chat', 'code', 'reasoning', 'function-calling'],
-    description: '1000 T/sec GPT OSS 20B - Blazing fast open model'
-  },
-  {
-    id: 'openai/gpt-oss-120b',
-    provider: 'groq',
-    tier: 'primary',
-    speed: 500,
-    costPer1M: 0.15,
-    contextWindow: 131072,
-    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks', 'function-calling'],
-    description: '500 T/sec GPT OSS 120B - High-power open model'
-  },
-  {
-    id: 'qwen/qwen3-32b',
+    id: 'groq/qwen-qwq-32b',
     provider: 'groq',
     tier: 'primary',
     speed: 450,
-    costPer1M: 0.10,
+    costPer1M: 0.29,
     contextWindow: 131072,
-    capabilities: ['chat', 'code', 'multilingual', 'reasoning'],
-    description: '450 T/sec Qwen3 32B - Excellent multilingual support'
+    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks'],
+    description: 'Qwen QwQ 32B - Advanced reasoning model'
+  },
+  
+  // FREE MODELS - Google AI Studio
+  {
+    id: 'google-ai-studio/gemma-3-1b-it:free',
+    provider: 'google-ai-studio',
+    tier: 'edge',
+    speed: 300,
+    costPer1M: 0,
+    contextWindow: 8192,
+    capabilities: ['chat', 'code', 'simple-tasks'],
+    description: 'Gemma 3 1B - FREE Google model'
   },
 
-  // TIER 2: EDGE - Cloudflare Workers AI (Ultra-low latency)
+  // TIER 2: EDGE - Workers AI (Cloudflare's built-in AI)
   {
-    id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+    id: 'workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     provider: 'workers-ai',
     tier: 'edge',
     speed: 200,
@@ -70,7 +62,7 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     description: 'Edge-optimized Llama 3.3 70B - Ultra-low latency'
   },
   {
-    id: '@cf/meta/llama-3.1-8b-instruct-fast',
+    id: 'workers-ai/@cf/meta/llama-3.1-8b-instruct-fast',
     provider: 'workers-ai',
     tier: 'edge',
     speed: 400,
@@ -78,16 +70,6 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     contextWindow: 8192,
     capabilities: ['chat', 'code', 'simple-tasks'],
     description: 'Edge-optimized Llama 3.1 8B - Instant responses'
-  },
-  {
-    id: '@cf/qwen/qwen2.5-7b-instruct-awq',
-    provider: 'workers-ai',
-    tier: 'edge',
-    speed: 350,
-    costPer1M: 0.011,
-    contextWindow: 32768,
-    capabilities: ['chat', 'code', 'multilingual'],
-    description: 'Edge-optimized Qwen 2.5 7B - Great for multilingual'
   },
 
   // TIER 3: FLAGSHIP - OpenAI (Highest quality)
