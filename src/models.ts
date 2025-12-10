@@ -7,46 +7,16 @@ import type { ModelConfig } from './types';
 
 export const MODEL_REGISTRY: ModelConfig[] = [
   // TIER 1: PRIMARY - Groq Models (Ultra-fast, cost-effective)
-  // Note: When using via AI Gateway, keep the groq/ prefix
+  // Using confirmed working model: groq/qwen/qwen3-32b
   {
-    id: 'groq/llama-3.1-8b-instant',
-    provider: 'groq',
-    tier: 'primary',
-    speed: 560,
-    costPer1M: 0.05,
-    contextWindow: 131072,
-    capabilities: ['chat', 'code', 'reasoning', 'function-calling'],
-    description: '560 T/sec Llama 3.1 8B - Lightning fast for simple tasks'
-  },
-  {
-    id: 'groq/llama-3.3-70b-versatile',
-    provider: 'groq',
-    tier: 'primary',
-    speed: 280,
-    costPer1M: 0.59,
-    contextWindow: 131072,
-    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks', 'function-calling'],
-    description: '280 T/sec Llama 3.3 70B - Balanced power and speed'
-  },
-  {
-    id: 'groq/qwen-qwq-32b',
+    id: 'groq/qwen/qwen3-32b',
     provider: 'groq',
     tier: 'primary',
     speed: 450,
-    costPer1M: 0.29,
+    costPer1M: 0.10,
     contextWindow: 131072,
-    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks'],
-    description: 'Qwen QwQ 32B - Advanced reasoning model'
-  },
-  {
-    id: 'groq/openai/gpt-oss-120b',
-    provider: 'groq',
-    tier: 'primary',
-    speed: 500,
-    costPer1M: 0.15,
-    contextWindow: 131072,
-    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks', 'function-calling'],
-    description: '500 T/sec GPT OSS 120B - High-power open model'
+    capabilities: ['chat', 'code', 'reasoning', 'complex-tasks', 'multilingual'],
+    description: '450 T/sec Qwen3 32B - Excellent multilingual, fast and cost-effective'
   },
   
   // FREE MODELS - Google AI Studio
