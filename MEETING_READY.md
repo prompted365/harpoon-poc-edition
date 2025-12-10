@@ -46,16 +46,16 @@ Open presentation in full screen, navigate with top nav bar
 
 ## 💬 30-Second Elevator Pitch
 
-> "Harpoon brings intelligent orchestration to hosted.ai's multi-tenant GPUaaS platform. We're already production-ready—routing workloads across Groq, Workers AI, and OpenAI based on user intent and cost constraints. What makes this powerful for hosted.ai is our **covenant system**: users describe what they want in natural language, and we automatically translate that to optimal GPU pool selection—whether that's your temporal scheduling for security or spatial scheduling for performance. We see hosted.ai as our primary GPU tier, positioned alongside Groq for cost-effective, high-throughput enterprise workloads."
+> "Harpoon brings intelligent orchestration to hosted.ai's multi-tenant GPUaaS platform. We have production infrastructure operational—routing across Groq, Workers AI, and OpenAI based on user intent and cost constraints. What makes this powerful for hosted.ai is our **covenant system**: users describe what they want in natural language, and we automatically translate that to optimal GPU pool selection—whether that's your temporal scheduling for security or spatial scheduling for performance. We see hosted.ai as our primary GPU tier, positioned alongside Groq for cost-effective, high-throughput enterprise workloads."
 
 ---
 
 ## 🎯 Key Talking Points (By Section)
 
 ### 1. Overview (First 2 Minutes)
-- **Hook**: "Since October, Harpoon evolved from Rust PoC to production TypeScript platform on Cloudflare's edge"
-- **Production Proof**: "Live right now with real customers: https://harpoon-v2.pages.dev"
-- **Core Insight**: "Your multi-tenant GPU scheduling + our covenant orchestration = enterprise swarm AI"
+- **Hook**: "Since October, Harpoon evolved from Rust PoC to production-ready TypeScript platform on Cloudflare's edge"
+- **Production Proof**: "Fully operational infrastructure: https://harpoon-v2.pages.dev - ready for enterprise deployment"
+- **Core Insight**: "Your multi-tenant GPU scheduling + our covenant orchestration = what enterprises need for production swarm AI"
 
 ### 2. Architecture (Technical Deep-Dive)
 - **Layer 1**: Cloudflare Workers (270+ global PoPs)
@@ -117,7 +117,7 @@ Open presentation in full screen, navigate with top nav bar
 - ✓ 99.9%+ API success rate
 - ✓ <1000ms average latency (including routing)
 - ✓ 30%+ cost savings vs pure cloud
-- ✓ 5 enterprise customers actively using
+- ✓ First 5 enterprise customers onboarded via partnership
 
 ### 90-Day Vision
 - 1M+ requests per month
@@ -181,7 +181,7 @@ Budget: $1, Time: 30 seconds, Quality: high
 
 ### If They're Interested (90% Likely)
 
-**Say**: "What's the best next step? We can start integration next week—our team can have a basic connection working in 2-3 days."
+**Say**: "What's the best next step? I'm ready to start integration next week—I can have a basic connection working in 2-3 days."
 
 **Offer**: "Would it help if we drafted a 2-week pilot plan with specific success criteria?"
 
@@ -224,7 +224,7 @@ https://www.promptedllc.com/
 - [x] hosted.ai website reviewed
 - [x] Julian's background researched (Cambridge, Hyperdrive, AWS)
 - [ ] Test screen sharing setup
-- [ ] Prepare 3 real customer use cases
+- [ ] Prepare 3 target enterprise use cases (financial analysis, document processing, code review)
 - [ ] Have pilot proposal template ready
 - [ ] Review their latest blog posts/announcements
 - [ ] Practice 30-second pitch out loud
@@ -237,8 +237,8 @@ https://www.promptedllc.com/
 ### From Other GPU Providers
 - **Not just another API**: We bring intelligent orchestration layer
 - **Natural language interface**: Covenants vs infrastructure YAML
-- **Multi-cloud proven**: Already routing across 4+ providers
-- **Enterprise ready**: Production traffic, real customers, not just prototypes
+- **Multi-cloud proven**: Infrastructure routing across 4+ providers
+- **Enterprise ready**: Production infrastructure operational, ready for customer onboarding
 
 ### From Other Orchestration Tools
 - **Built for edge**: Cloudflare Workers, not Kubernetes
