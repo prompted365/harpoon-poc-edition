@@ -19,7 +19,13 @@ const state = {
   commandPaletteOpen: false,
   insightsExpanded: false,
   expandedAgents: new Set(), // Track which agents are expanded
-  sidebarWidth: 400 // Resizable sidebar width
+  sidebarWidth: 400, // Resizable sidebar width
+  ws: {
+    mediator: null,
+    orchestrator: null,
+    connected: false
+  },
+  userId: `user-${Date.now()}` // Unique user ID for DO isolation
 };
 
 // ==========================================
@@ -795,6 +801,136 @@ function initResizableSidebar() {
 // INITIALIZATION
 // ==========================================
 
+// WebSocket Connection Management
+function connectWebSocket() {
+  // Check if WebSocket is supported
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  
+  try {
+    // Connect to Mediator DO
+    const mediatorWs = new WebSocket(`${protocol}//${host}/api/agents/mediator/${state.userId}/ws`);
+    
+    mediatorWs.onopen = () => {
+      console.log('✅ Mediator WebSocket connected');
+      state.ws.mediator = mediatorWs;
+      state.ws.connected = true;
+      showToast('🔗 Real-time connection established', 'success');
+    };
+    
+    mediatorWs.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      handleWebSocketMessage(message);
+    };
+    
+    mediatorWs.onerror = (error) => {
+      console.error('❌ Mediator WebSocket error:', error);
+      state.ws.connected = false;
+    };
+    
+    mediatorWs.onclose = () => {
+      console.log('🔌 Mediator WebSocket closed');
+      state.ws.mediator = null;
+      state.ws.connected = false;
+      
+      // Attempt reconnect after 5s
+      setTimeout(() => {
+        if (!state.ws.connected) {
+          console.log('🔄 Attempting to reconnect...');
+          connectWebSocket();
+        }
+      }, 5000);
+    };
+  } catch (error) {
+    console.warn('⚠️ WebSocket not available (development mode)');
+    console.log('💡 Deploy to Cloudflare Pages for real-time features');
+  }
+}
+
+function handleWebSocketMessage(message) {
+  console.log('📨 WebSocket message:', message.type, message.data);
+  
+  switch (message.type) {
+    case 'covenant_update':
+      state.covenant = message.data;
+      renderCovenant();
+      break;
+      
+    case 'status_change':
+      if (state.covenant) {
+        state.covenant.status = message.data.status;
+        renderCovenant();
+      }
+      break;
+      
+    case 'agent_spawn':
+      addAgentToTree(message.data);
+      break;
+      
+    case 'agent_progress':
+      updateAgentProgress(message.data);
+      break;
+      
+    case 'agent_complete':
+      markAgentComplete(message.data);
+      break;
+      
+    case 'delegation':
+      showToast(`🎭 Delegating to ${message.data.to}`, 'info');
+      break;
+      
+    case 'task_start':
+      showToast('🚀 Orchestration started', 'info');
+      break;
+      
+    case 'task_complete':
+      showToast('✅ Orchestration complete', 'success');
+      break;
+      
+    case 'error':
+      showToast(`⚠️ ${message.data.message}`, 'error');
+      break;
+  }
+}
+
+function addAgentToTree(agent) {
+  // Add to appropriate section (mediator or orchestrator)
+  if (agent.type.includes('mediator') || !state.orchestration.orchestrator.subAgents.length) {
+    state.orchestration.mediator.tasks.push(agent);
+  } else {
+    state.orchestration.orchestrator.subAgents.push(agent);
+  }
+  renderOrchestrationTree();
+}
+
+function updateAgentProgress(agent) {
+  // Find and update agent in tree
+  let found = state.orchestration.mediator.tasks.find(a => a.id === agent.id);
+  if (found) {
+    Object.assign(found, agent);
+  } else {
+    found = state.orchestration.orchestrator.subAgents.find(a => a.id === agent.id);
+    if (found) {
+      Object.assign(found, agent);
+    }
+  }
+  renderOrchestrationTree();
+}
+
+function markAgentComplete(agent) {
+  updateAgentProgress(agent);
+}
+
+function sendWebSocketMessage(type, data) {
+  if (state.ws.mediator && state.ws.mediator.readyState === WebSocket.OPEN) {
+    state.ws.mediator.send(JSON.stringify({
+      type,
+      data,
+      timestamp: new Date().toISOString()
+    }));
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initCommandPalette();
   initResizableSidebar();
@@ -809,6 +945,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Auto-create initial covenant
   startNewCovenant();
+  
+  // Connect WebSocket for real-time updates
+  connectWebSocket();
   
   // Enter to send
   document.getElementById('chatInput').addEventListener('keypress', (e) => {
@@ -825,4 +964,5 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Harpoon v2 UI Loaded - Press Cmd+K for command palette');
   console.log('💡 Click agent headers to expand/collapse details');
   console.log('↔️ Drag sidebar edge to resize');
+  console.log('🔗 Connecting to WebSocket for real-time updates...');
 });

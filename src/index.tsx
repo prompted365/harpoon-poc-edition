@@ -8,7 +8,6 @@ import { cors } from 'hono/cors';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import type { Env } from './types';
-import type { AgentEnv } from './agents/types';
 import { AIClient } from './ai-client';
 import { UnifiedAIClient } from './ai-client-unified';
 import { SmartRouter } from './router';
@@ -19,6 +18,10 @@ import {
   EvaluatorOptimizerPattern,
   SmartRouterPattern
 } from './orchestration/patterns';
+
+// Export Durable Object classes for Cloudflare Workers
+export { MediatorAgent } from './agents/mediator-agent';
+export { OrchestratorAgent } from './agents/orchestrator-agent';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -304,17 +307,123 @@ app.post('/api/orchestrate/smart', async (c) => {
 });
 
 // ========================================
-// AGENTS SDK ROUTES (Production Only)
-// For development, these return 503
-// For production deployment, use worker.ts
+// AGENTS SDK ROUTES (Durable Objects + WebSocket)
 // ========================================
 
+// Mediator Agent WebSocket Connection
+app.get('/api/agents/mediator/:userId/ws', async (c) => {
+  const env = c.env as any;
+  
+  // Check if running in Cloudflare Workers (has DO bindings)
+  if (!env.MEDIATOR) {
+    return c.json({
+      error: 'Durable Objects not available in development mode',
+      message: 'Deploy to Cloudflare Pages for full agent functionality'
+    }, 503);
+  }
+
+  const userId = c.req.param('userId');
+  const id = env.MEDIATOR.idFromName(userId);
+  const stub = env.MEDIATOR.get(id);
+  
+  return stub.fetch(c.req.raw);
+});
+
+// Mediator Agent REST API
+app.post('/api/agents/mediator/:userId/covenant', async (c) => {
+  const env = c.env as any;
+  
+  if (!env.MEDIATOR) {
+    return c.json({ error: 'Durable Objects not available' }, 503);
+  }
+
+  const userId = c.req.param('userId');
+  const id = env.MEDIATOR.idFromName(userId);
+  const stub = env.MEDIATOR.get(id);
+  
+  return stub.fetch(new Request('http://mediator/covenant', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(await c.req.json())
+  }));
+});
+
+app.get('/api/agents/mediator/:userId/status', async (c) => {
+  const env = c.env as any;
+  
+  if (!env.MEDIATOR) {
+    return c.json({ error: 'Durable Objects not available' }, 503);
+  }
+
+  const userId = c.req.param('userId');
+  const id = env.MEDIATOR.idFromName(userId);
+  const stub = env.MEDIATOR.get(id);
+  
+  return stub.fetch(new Request('http://mediator/status'));
+});
+
+// Orchestrator Agent WebSocket Connection
+app.get('/api/agents/orchestrator/:taskId/ws', async (c) => {
+  const env = c.env as any;
+  
+  if (!env.ORCHESTRATOR) {
+    return c.json({ error: 'Durable Objects not available' }, 503);
+  }
+
+  const taskId = c.req.param('taskId');
+  const id = env.ORCHESTRATOR.idFromName(taskId);
+  const stub = env.ORCHESTRATOR.get(id);
+  
+  return stub.fetch(c.req.raw);
+});
+
+// Orchestrator Agent REST API
+app.post('/api/agents/orchestrator/:taskId/execute', async (c) => {
+  const env = c.env as any;
+  
+  if (!env.ORCHESTRATOR) {
+    return c.json({ error: 'Durable Objects not available' }, 503);
+  }
+
+  const taskId = c.req.param('taskId');
+  const id = env.ORCHESTRATOR.idFromName(taskId);
+  const stub = env.ORCHESTRATOR.get(id);
+  
+  return stub.fetch(new Request('http://orchestrator/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(await c.req.json())
+  }));
+});
+
+app.get('/api/agents/orchestrator/:taskId/status', async (c) => {
+  const env = c.env as any;
+  
+  if (!env.ORCHESTRATOR) {
+    return c.json({ error: 'Durable Objects not available' }, 503);
+  }
+
+  const taskId = c.req.param('taskId');
+  const id = env.ORCHESTRATOR.idFromName(taskId);
+  const stub = env.ORCHESTRATOR.get(id);
+  
+  return stub.fetch(new Request('http://orchestrator/status'));
+});
+
+// Overall agent status
 app.get('/api/agents/status', (c) => {
+  const env = c.env as any;
+  const hasAgents = !!(env.MEDIATOR && env.ORCHESTRATOR);
+  
   return c.json({
-    agents_enabled: false,
-    mode: 'development',
-    message: 'Agents SDK is only available in Cloudflare Workers production deployment',
-    recommendation: 'Use orchestration patterns (/api/orchestrate/*) for similar functionality'
+    agents_enabled: hasAgents,
+    mode: hasAgents ? 'production' : 'development',
+    mediator: hasAgents ? 'available' : 'unavailable',
+    orchestrator: hasAgents ? 'available' : 'unavailable',
+    websockets: hasAgents ? 'supported' : 'not_supported',
+    message: hasAgents 
+      ? 'Durable Objects active - WebSocket connections available'
+      : 'Deploy to Cloudflare Pages for Durable Objects support'
   });
 });
 
