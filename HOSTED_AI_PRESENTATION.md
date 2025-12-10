@@ -1,6 +1,6 @@
 # 🎯 hosted.ai Partnership Presentation
 
-**Meeting Date**: December 11, 2024  
+**Meeting Date**: December 11, 2025  
 **Purpose**: Position Harpoon as the intelligent orchestration layer for hosted.ai's multi-tenant GPUaaS platform
 
 ---
