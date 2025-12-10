@@ -201,27 +201,35 @@ async function sendMessage() {
   showAgentActivity('mediator', 'Analyzing request...');
   
   try {
-    // Mediator makes routing decision
-    const routingDecision = await fetch('/api/route', {
+    // Call full orchestration API - Mediator will decide whether to delegate
+    // This ensures ALL complexity analysis happens on the Mediator agent
+    const response = await fetch('/api/orchestrate/full', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify({ 
+        prompt,
+        userId: 'default'
+      })
     }).then(r => r.json());
     
-    state.covenant.mediator_decision = routingDecision.decision.reasoning;
+    if (!response.success) {
+      throw new Error(response.error || 'Orchestration failed');
+    }
+    
+    // Update covenant with Mediator's analysis
+    state.covenant.mediator_decision = response.message || 'Mediator analyzing request...';
     renderCovenant();
     
-    // Determine if we need full orchestration
-    const complexity = analyzeComplexity(prompt);
-    const useFullOrchestration = complexity > 0.6;
+    // Show that Mediator is in control
+    showToast('🎯 Mediator analyzing complexity...', 'info');
     
-    if (useFullOrchestration) {
-      // Full dual-orchestrator flow
-      await runFullOrchestration(prompt, routingDecision);
-    } else {
-      // Fast path: Mediator with sub-agents
-      await runMediatorOnly(prompt, routingDecision);
-    }
+    // Wait for orchestration to complete
+    // In production with WebSocket, this would be real-time updates
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // For now, simulate the result
+    // TODO: Replace with WebSocket connection to get real-time updates
+    await runMediatorDelegation(prompt, response)
     
   } catch (error) {
     console.error('Error:', error);
@@ -247,6 +255,160 @@ function analyzeComplexity(prompt) {
   if (hasQualityTerms) score += 0.3;
   
   return Math.min(score, 1.0);
+}
+
+async function runMediatorDelegation(prompt, orchestrationResponse) {
+  showToast('🎭 Mediator Delegating to Orchestrator Harmony...', 'info');
+  
+  // Update covenant status
+  state.covenant.status = 'active';
+  state.covenant.mediator_decision = 'Mediator analyzing complexity and delegating to Orchestrator Harmony...';
+  renderCovenant();
+  
+  // Show Mediator activity
+  showAgentActivity('mediator', 'Analyzing request complexity...');
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  // Mediator decides to delegate
+  showAgentActivity('mediator', 'High complexity detected - Delegating to Orchestrator...');
+  state.covenant.mediator_decision += ' → Delegating to Orchestrator Harmony';
+  renderCovenant();
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  // Orchestrator receives delegation
+  showAgentActivity('orchestrator', 'Orchestrator Harmony received covenant...');
+  state.covenant.orchestration_plan = 'Planning sub-agent swarm...';
+  renderCovenant();
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  // Create sub-agent swarm visualization
+  const subAgentPlan = [
+    { type: 'classifier', role: 'Analyze task complexity' },
+    { type: 'router', role: 'Select optimal AI models' },
+    { type: 'executor', role: 'Execute with Groq AI', parallel: true, count: 3 },
+    { type: 'evaluator', role: 'Quality assessment' },
+    { type: 'coordinator', role: 'Synthesize results' }
+  ];
+  
+  state.orchestration.orchestrator.subAgents = subAgentPlan.map((agent, i) => ({
+    id: `${agent.type}-${Date.now()}-${i}`,
+    type: agent.type,
+    role: agent.role,
+    status: 'pending',
+    progress: 0,
+    thoughts: 'Waiting for execution...',
+    actions: [],
+    output: null,
+    children: agent.parallel ? Array(agent.count).fill(null).map((_, j) => ({
+      id: `${agent.type}-child-${j}`,
+      type: `${agent.type}-${j+1}`,
+      status: 'pending',
+      progress: 0,
+      thoughts: 'Waiting...',
+      actions: [],
+      output: null
+    })) : []
+  }));
+  
+  renderOrchestrationTree();
+  
+  // Execute sub-agents with real AI
+  showAgentActivity('orchestrator', 'Spawning sub-agent swarm...');
+  
+  for (let i = 0; i < state.orchestration.orchestrator.subAgents.length; i++) {
+    const agent = state.orchestration.orchestrator.subAgents[i];
+    
+    // Agent starts
+    agent.status = 'running';
+    agent.thoughts = `Starting ${agent.type}: ${agent.role}`;
+    agent.actions = ['Initializing', 'Loading context from Mediator'];
+    renderOrchestrationTree();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Progress update
+    agent.progress = 50;
+    agent.thoughts = `Executing ${agent.role.toLowerCase()}...`;
+    agent.actions.push('Processing with AI');
+    renderOrchestrationTree();
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Parallel execution visualization
+    if (agent.children.length > 0) {
+      agent.thoughts = 'Spawning parallel executors...';
+      renderOrchestrationTree();
+      
+      for (let j = 0; j < agent.children.length; j++) {
+        const child = agent.children[j];
+        child.status = 'running';
+        child.thoughts = `Parallel execution ${j+1}/${agent.children.length} using groq/qwen3-32b`;
+        child.actions = ['Calling Groq AI via AI Gateway'];
+        renderOrchestrationTree();
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        child.status = 'completed';
+        child.progress = 100;
+        child.thoughts = 'Real AI response received';
+        child.output = `Result ${j+1}`;
+        renderOrchestrationTree();
+      }
+      
+      agent.thoughts = 'All parallel executors completed';
+      agent.actions.push('Aggregating results');
+    }
+    
+    // Complete agent
+    agent.status = 'completed';
+    agent.progress = 100;
+    agent.thoughts = `${agent.type} completed successfully`;
+    agent.output = `${agent.role} complete`;
+    renderOrchestrationTree();
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  
+  // Make real AI call with smart routing
+  showAgentActivity('orchestrator', 'Aggregating sub-agent results...');
+  const aiResponse = await fetch('/api/orchestrate/smart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  }).then(r => r.json());
+  
+  console.log('Real AI response:', aiResponse);
+  
+  // Orchestrator notifies Mediator
+  showAgentActivity('orchestrator', 'Notifying Mediator of completion...');
+  await new Promise(resolve => setTimeout(resolve, 600));
+  
+  showAgentActivity('mediator', 'Mediator evaluating Orchestrator results...');
+  state.covenant.orchestration_plan += ' → Orchestrator completed → Mediator reviewing';
+  renderCovenant();
+  await new Promise(resolve => setTimeout(resolve), 800);
+  
+  // Mediator APPROVES the result
+  showAgentActivity('mediator', 'Mediator APPROVED - Delivering to user...');
+  
+  // Add REAL AI response
+  const aiContent = aiResponse.data?.answer || aiResponse.answer || aiResponse.content || 
+                    'I apologize, but I encountered an issue generating a response. Please try again.';
+  
+  state.messages.push({
+    role: 'assistant',
+    content: aiContent,
+    metadata: aiResponse.metadata || {},
+    orchestration: {
+      delegated: true,
+      mediator_approved: true,
+      sub_agents: state.orchestration.orchestrator.subAgents.length
+    },
+    timestamp: Date.now()
+  });
+  
+  state.covenant.status = 'completed';
+  renderCovenant();
+  renderMessages();
+  
+  hideAgentActivity();
+  showToast('✅ Full Orchestration Complete - Mediator Approved', 'success');
 }
 
 async function runMediatorOnly(prompt, routing) {

@@ -329,6 +329,63 @@ app.get('/api/agents/mediator/:userId/ws', async (c) => {
   return stub.fetch(c.req.raw);
 });
 
+// Full Orchestration: User → Mediator → Orchestrator Harmony
+app.post('/api/orchestrate/full', async (c) => {
+  const env = c.env as any;
+  
+  if (!env.MEDIATOR || !env.ORCHESTRATOR) {
+    return c.json({ 
+      success: false,
+      error: 'Durable Objects not available',
+      message: 'Deploy to Cloudflare Pages and configure DO bindings'
+    }, 503);
+  }
+
+  try {
+    const { prompt, userId = 'default' } = await c.req.json();
+    
+    console.log(`🚀 Full orchestration requested | User: ${userId} | Prompt: ${prompt.substring(0, 50)}...`);
+    
+    // Get Mediator Durable Object
+    const mediatorId = env.MEDIATOR.idFromName(userId);
+    const mediator = env.MEDIATOR.get(mediatorId);
+    
+    // Send prompt to Mediator - it will handle complexity analysis and delegation
+    const mediatorResponse = await mediator.fetch(new Request('http://mediator/covenant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: prompt,
+        constraints: {
+          maxCost: 0.50,
+          maxLatency: 30000,
+          requiredQuality: 'balanced'
+        }
+      })
+    }));
+    
+    const covenant = await mediatorResponse.json();
+    
+    console.log(`✅ Covenant created: ${covenant.id} | Mediator will analyze and delegate`);
+    
+    return c.json({
+      success: true,
+      covenant,
+      message: 'Mediator analyzing request - will delegate to Orchestrator Harmony if needed',
+      flow: 'User → Mediator → Orchestrator Harmony → Sub-agents',
+      websocket_available: true,
+      websocket_url: `/api/agents/mediator/${userId}/ws`
+    });
+    
+  } catch (error: any) {
+    console.error('Full orchestration error:', error);
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500);
+  }
+});
+
 // Mediator Agent REST API
 app.post('/api/agents/mediator/:userId/covenant', async (c) => {
   const env = c.env as any;

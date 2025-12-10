@@ -112,9 +112,22 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
     }
     
     if (url.pathname === '/covenant' && request.method === 'POST') {
-      const covenant: Covenant = await request.json();
-      await this.executeCovenant(covenant);
-      return new Response(JSON.stringify({ status: 'accepted', covenantId: covenant.id }), {
+      const payload = await request.json();
+      const covenant: Covenant = payload.covenant || payload;
+      const mediatorContext = payload.mediatorContext || {};
+      const callbackUrl = payload.callbackUrl;
+      
+      console.log(`🎭 Orchestrator Harmony received covenant ${covenant.id} from Mediator`);
+      console.log(`   Context: ${mediatorContext.conversationHistory?.length || 0} messages`);
+      
+      // Execute covenant asynchronously (non-blocking)
+      this.executeCovenant(covenant, mediatorContext, callbackUrl);
+      
+      return new Response(JSON.stringify({ 
+        status: 'accepted', 
+        covenantId: covenant.id,
+        message: 'Orchestrator Harmony is coordinating sub-agent swarm...'
+      }), {
         headers: { 'Content-Type': 'application/json' }
       });
     }
@@ -123,10 +136,16 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
   }
 
   /**
-   * Execute a covenant with full orchestration
+   * Execute a covenant with full orchestration and hierarchical context
    */
-  private async executeCovenant(covenant: Covenant) {
-    console.log(`🎯 Executing covenant: ${covenant.id}`);
+  private async executeCovenant(
+    covenant: Covenant, 
+    mediatorContext: any = {},
+    callbackUrl?: string
+  ) {
+    console.log(`🎯 Orchestrator Harmony executing covenant: ${covenant.id}`);
+    console.log(`   Max tokens: ${covenant.constraints.maxTokens || 4096}`);
+    console.log(`   Quality tier: ${covenant.constraints.requiredQuality}`);
     
     const startTime = Date.now();
     
@@ -165,10 +184,10 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
       await this.updateCovenantProgress(covenant.id, 30);
       
       // Step 3: Create Swarm Operation for parallel execution
-      const swarmOp = await this.createSwarmOperation(covenant, routingTask.result);
+      const swarmOp = await this.createSwarmOperation(covenant, routingTask.result, mediatorContext);
       
-      // Step 4: Execute tasks in swarm (parallel)
-      const results = await this.executeSwarm(swarmOp);
+      // Step 4: Execute tasks in swarm (parallel) with hierarchical context
+      const results = await this.executeSwarm(swarmOp, mediatorContext);
       
       // Update progress
       covenant.state.progress = 70;
@@ -193,10 +212,16 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
       covenant.state.progress = 100;
       covenant.completedAt = new Date().toISOString();
       covenant.execution.actualTime = executionTime;
+      covenant.execution.actualCost = evaluation.overallQuality * 0.01; // Simplified cost
       covenant.results = {
         outputs: winchResult.gatheredResults,
         quality: evaluation.overallQuality,
-        evaluation: evaluation.feedback
+        evaluation: evaluation.feedback,
+        swarmMetrics: {
+          totalSubAgents: swarmOp.agents.length,
+          executionTime,
+          parallelization: swarmOp.coordination.parallel
+        }
       };
       
       // Update database
@@ -209,10 +234,15 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
       // Update metrics
       this.updateMetrics(covenant, executionTime);
       
-      // Notify Mediator of completion
-      await this.notifyMediatorCompletion(covenant);
+      // Notify Mediator of completion (CRITICAL)
+      if (callbackUrl) {
+        await this.notifyMediatorCompletion(covenant, callbackUrl);
+      } else {
+        await this.notifyMediatorCompletion(covenant);
+      }
       
-      console.log(`✅ Covenant ${covenant.id} completed in ${executionTime}ms`);
+      console.log(`✅ Orchestrator Harmony completed covenant ${covenant.id} in ${executionTime}ms`);
+      console.log(`   Quality: ${evaluation.overallQuality.toFixed(2)} | Sub-agents: ${swarmOp.agents.length}`);
       
     } catch (error: any) {
       console.error(`❌ Covenant ${covenant.id} failed:`, error);
@@ -388,21 +418,39 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
   }
 
   /**
-   * Create swarm operation for parallel execution
+   * Create swarm operation for parallel execution with context
    */
   private async createSwarmOperation(
     covenant: Covenant,
-    routing: any
+    routing: any,
+    mediatorContext: any = {}
   ): Promise<SwarmOperation> {
     const swarmId = `swarm_${Date.now()}`;
     
-    // Determine if we can parallelize
-    const parallel = covenant.requirements.length <= 3;
+    // Determine if we can parallelize based on requirements
+    const requirementCount = covenant.requirements.length;
+    const parallel = requirementCount <= 5;
+    
+    // Create sub-agent tasks based on requirements
+    const agents = covenant.requirements.map((req, idx) => ({
+      id: `agent_${idx}_${Date.now()}`,
+      role: 'executor' as SubAgentRole,
+      taskId: `task_${req}_${Date.now()}`,
+      requirement: req,
+      parentContext: {
+        covenantId: covenant.id,
+        intent: covenant.intent,
+        conversationHistory: mediatorContext.conversationHistory || [],
+        routing
+      }
+    }));
+    
+    console.log(`🦜 Swarm operation ${swarmId} created with ${agents.length} sub-agents`);
     
     return {
       id: swarmId,
       covenantId: covenant.id,
-      agents: [],
+      agents,
       coordination: {
         parallel,
         dependencies: {}
@@ -412,12 +460,69 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
   }
 
   /**
-   * Execute swarm of agents
+   * Execute swarm of agents with hierarchical context propagation
    */
-  private async executeSwarm(swarm: SwarmOperation): Promise<any[]> {
-    // For now, return empty array
-    // In production, this would spawn multiple executor agents
-    return [];
+  private async executeSwarm(
+    swarm: SwarmOperation,
+    mediatorContext: any = {}
+  ): Promise<any[]> {
+    console.log(`🌊 Executing swarm ${swarm.id} with ${swarm.agents.length} agents`);
+    
+    const results: any[] = [];
+    
+    if (swarm.coordination.parallel) {
+      // Parallel execution
+      console.log(`   ⚡ Parallel mode: All ${swarm.agents.length} agents executing simultaneously`);
+      
+      const promises = swarm.agents.map(async (agent, idx) => {
+        console.log(`      🤖 Spawning sub-agent ${idx + 1}/${swarm.agents.length}: ${agent.requirement}`);
+        
+        const task = await this.assignSubAgentTask(
+          'executor',
+          swarm.covenantId,
+          {
+            prompt: `Task: ${agent.requirement}\n\nContext: ${agent.parentContext.intent}`,
+            model: 'groq/qwen/qwen3-32b',
+            temperature: 0.7,
+            max_tokens: 2048,
+            parentContext: agent.parentContext
+          }
+        );
+        
+        await this.executeSubAgentTask(task);
+        return task.result;
+      });
+      
+      const allResults = await Promise.all(promises);
+      results.push(...allResults);
+      
+    } else {
+      // Sequential execution
+      console.log(`   🔗 Sequential mode: ${swarm.agents.length} agents executing in order`);
+      
+      for (const [idx, agent] of swarm.agents.entries()) {
+        console.log(`      🤖 Executing sub-agent ${idx + 1}/${swarm.agents.length}: ${agent.requirement}`);
+        
+        const task = await this.assignSubAgentTask(
+          'executor',
+          swarm.covenantId,
+          {
+            prompt: `Task: ${agent.requirement}\n\nContext: ${agent.parentContext.intent}`,
+            model: 'groq/qwen/qwen3-32b',
+            temperature: 0.7,
+            max_tokens: 2048,
+            parentContext: agent.parentContext,
+            previousResults: results // Pass previous results for context
+          }
+        );
+        
+        await this.executeSubAgentTask(task);
+        results.push(task.result);
+      }
+    }
+    
+    console.log(`✅ Swarm ${swarm.id} completed: ${results.length} results`);
+    return results;
   }
 
   /**
@@ -515,20 +620,48 @@ export class OrchestratorAgent extends Agent<AgentEnv, OrchestratorState> {
   }
 
   /**
-   * Notify Mediator of completion
+   * Notify Mediator of completion (CRITICAL CALLBACK)
    */
-  private async notifyMediatorCompletion(covenant: Covenant) {
+  private async notifyMediatorCompletion(covenant: Covenant, callbackUrl?: string) {
     try {
+      console.log(`📤 Orchestrator → Mediator: Notifying completion of ${covenant.id}`);
+      
       const mediatorId = this.env.MEDIATOR.idFromName(covenant.userId);
       const mediator = this.env.MEDIATOR.get(mediatorId);
       
-      await mediator.fetch('https://mediator/covenant-complete', {
+      const completionPayload = {
+        ...covenant,
+        orchestratorMetadata: {
+          completedAt: new Date().toISOString(),
+          executionTime: covenant.execution.actualTime,
+          quality: covenant.results?.quality || 0,
+          subAgentCount: covenant.results?.swarmMetrics?.totalSubAgents || 0
+        }
+      };
+      
+      await mediator.fetch(callbackUrl || 'https://mediator/covenant-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(covenant)
+        body: JSON.stringify(completionPayload)
       });
-    } catch (error) {
-      console.error('Failed to notify Mediator:', error);
+      
+      console.log(`✅ Mediator notified successfully for covenant ${covenant.id}`);
+      
+    } catch (error: any) {
+      console.error(`❌ Failed to notify Mediator for covenant ${covenant.id}:`, error.message);
+      
+      // Log to database for manual recovery
+      this.sql`
+        INSERT INTO evaluations (id, covenant_id, task_id, quality, feedback, created_at)
+        VALUES (
+          ${'eval_error_' + Date.now()},
+          ${covenant.id},
+          'mediator_notification',
+          0,
+          ${JSON.stringify({ error: error.message, covenant })},
+          ${Date.now()}
+        )
+      `;
     }
   }
 }

@@ -85,7 +85,81 @@ export class MediatorAgent extends AIChatAgent<AgentEnv, MediatorState> {
       });
     }
     
+    // Handle completion callback from Orchestrator
+    if (url.pathname === '/covenant-complete' && request.method === 'POST') {
+      const completedCovenant: Covenant = await request.json();
+      await this.handleCovenantCompletion(completedCovenant);
+      return new Response(JSON.stringify({ status: 'acknowledged' }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
     return new Response('Mediator Agent', { status: 200 });
+  }
+  
+  /**
+   * Handle covenant completion from Orchestrator
+   */
+  private async handleCovenantCompletion(covenant: Covenant) {
+    console.log(`✅ Mediator received completion for covenant ${covenant.id}`);
+    
+    // Update database
+    this.sql`
+      UPDATE mediator_covenants 
+      SET status = ${covenant.state.current}, updated_at = ${Date.now()}
+      WHERE id = ${covenant.id}
+    `;
+    
+    // Quality evaluation by Mediator
+    const qualityCheck = this.evaluateOrchestratorResult(covenant);
+    
+    if (qualityCheck.approved) {
+      console.log(`✅ Mediator APPROVED covenant ${covenant.id} | Quality: ${qualityCheck.quality}`);
+      
+      // Store message with orchestrator results
+      this.sql`
+        INSERT INTO mediator_messages (id, covenant_id, role, content, timestamp)
+        VALUES (
+          ${'msg_' + Date.now()},
+          ${covenant.id},
+          'assistant',
+          ${JSON.stringify(covenant.results)},
+          ${Date.now()}
+        )
+      `;
+    } else {
+      console.log(`❌ Mediator REJECTED covenant ${covenant.id} | Reason: ${qualityCheck.reason}`);
+      
+      // Could trigger re-execution with adjusted parameters
+      // For now, just log rejection
+    }
+    
+    // Update state
+    this.setState({
+      ...this.state,
+      activeCovenants: this.state.activeCovenants.filter(id => id !== covenant.id)
+    });
+  }
+  
+  /**
+   * Evaluate Orchestrator result quality
+   */
+  private evaluateOrchestratorResult(covenant: Covenant): { approved: boolean; quality: number; reason?: string } {
+    if (!covenant.results) {
+      return { approved: false, quality: 0, reason: 'No results returned' };
+    }
+    
+    const quality = covenant.results.quality || 0;
+    
+    if (quality < 0.6) {
+      return { approved: false, quality, reason: `Quality too low: ${quality}` };
+    }
+    
+    if (covenant.state.current === 'failed') {
+      return { approved: false, quality: 0, reason: 'Orchestrator marked as failed' };
+    }
+    
+    return { approved: true, quality };
   }
 
   /**
@@ -136,7 +210,7 @@ export class MediatorAgent extends AIChatAgent<AgentEnv, MediatorState> {
   }
 
   /**
-   * Handle user messages with fast, smart routing
+   * Handle user messages with intelligent complexity analysis
    */
   private async handleUserMessage(content: string, connection: any) {
     const startTime = Date.now();
@@ -147,55 +221,76 @@ export class MediatorAgent extends AIChatAgent<AgentEnv, MediatorState> {
       content
     });
     
-    // Quick classification
+    // Deep complexity analysis
+    const complexity = this.analyzeComplexity(content);
     const router = new SmartRouter();
     const classification = router.classifyRequest({ prompt: content });
     
-    // Simple queries: Handle directly with fast response
-    if (classification.complexity === 'simple') {
-      connection.send(JSON.stringify({
-        type: 'response_start',
-        classification
-      }));
+    console.log(`🎯 Mediator analyzing request | Complexity: ${complexity.score.toFixed(2)} | Type: ${complexity.type}`);
+    
+    // Send analysis to client
+    connection.send(JSON.stringify({
+      type: 'mediator_analysis',
+      complexity,
+      classification
+    }));
+    
+    // ALWAYS delegate moderate/complex queries to Orchestrator for full swarm orchestration
+    if (complexity.score > 0.4 || classification.complexity !== 'simple') {
+      console.log(`✅ Delegating to Orchestrator (complexity: ${complexity.score.toFixed(2)})`);
       
-      const client = new AIClient(this.env);
-      const response = await client.chat({
-        prompt: content,
-        tier: 'edge' // Force edge tier for speed
+      const covenant = await this.createCovenant(content, {
+        maxLatency: complexity.score > 0.7 ? 30000 : 15000,
+        requiredQuality: complexity.score > 0.7 ? 'quality' : 'balanced',
+        maxCost: 0.50,
+        maxTokens: complexity.score > 0.7 ? 8192 : 4096
       });
       
       connection.send(JSON.stringify({
-        type: 'response_complete',
-        content: response.content,
-        metadata: {
-          model: response.model,
-          latency: Date.now() - startTime,
-          cost: response.cost.amount
-        }
+        type: 'covenant_created',
+        covenant,
+        message: `🎭 Mediator delegating to Orchestrator Harmony for ${complexity.type} task...`
       }));
       
-      this.messages.push({
-        role: 'assistant',
-        content: response.content
-      });
+      // Delegate to Orchestrator (non-blocking)
+      await this.delegateToOrchestrator(covenant, connection);
+      
+      // Track performance
+      const latency = Date.now() - startTime;
+      this.updatePerformance(latency, true);
       
       return;
     }
     
-    // Complex queries: Create covenant and delegate to Orchestrator
-    const covenant = await this.createCovenant(content, {
-      maxLatency: 5000,
-      requiredQuality: 'balanced'
+    // Only trivial queries: Handle directly with fast response
+    console.log(`⚡ Fast-path for simple query`);
+    
+    connection.send(JSON.stringify({
+      type: 'response_start',
+      classification
+    }));
+    
+    const client = new AIClient(this.env);
+    const response = await client.chat({
+      prompt: content,
+      tier: 'primary',
+      max_tokens: 2048
     });
     
     connection.send(JSON.stringify({
-      type: 'covenant_created',
-      covenant,
-      message: 'Processing your request with our orchestration layer...'
+      type: 'response_complete',
+      content: response.content,
+      metadata: {
+        model: response.model,
+        latency: Date.now() - startTime,
+        cost: response.cost.amount
+      }
     }));
     
-    // Delegate to Orchestrator (non-blocking)
-    await this.delegateToOrchestrator(covenant);
+    this.messages.push({
+      role: 'assistant',
+      content: response.content
+    });
     
     // Track performance
     const latency = Date.now() - startTime;
@@ -253,48 +348,177 @@ export class MediatorAgent extends AIChatAgent<AgentEnv, MediatorState> {
   }
 
   /**
+   * Analyze request complexity for delegation decision
+   */
+  private analyzeComplexity(intent: string): { score: number; type: string; factors: string[] } {
+    const factors: string[] = [];
+    let score = 0;
+    
+    // Token length analysis
+    const words = intent.split(/\s+/).length;
+    if (words > 50) {
+      score += 0.4;
+      factors.push('long_query');
+    } else if (words > 20) {
+      score += 0.2;
+      factors.push('medium_query');
+    }
+    
+    // Multi-step/multi-task indicators
+    const multiStepPatterns = /\b(and|then|also|after|before|first|second|third|finally|additionally)\b/gi;
+    const multiSteps = (intent.match(multiStepPatterns) || []).length;
+    if (multiSteps >= 3) {
+      score += 0.4;
+      factors.push('multi_step');
+    } else if (multiSteps >= 1) {
+      score += 0.2;
+      factors.push('sequential');
+    }
+    
+    // Quality/depth requirements
+    const qualityPatterns = /\b(detailed|comprehensive|thorough|in-depth|complete|extensive|analyze|compare|research)\b/gi;
+    if (qualityPatterns.test(intent)) {
+      score += 0.3;
+      factors.push('high_quality_required');
+    }
+    
+    // Complex task types
+    if (/\b(analyze|research|investigate|compare|synthesize|summarize)\b/i.test(intent)) {
+      score += 0.3;
+      factors.push('complex_task');
+    }
+    
+    // Reasoning requirements
+    if (/\b(why|how|explain|reason|cause|because)\b/i.test(intent)) {
+      score += 0.2;
+      factors.push('reasoning_required');
+    }
+    
+    const type = score > 0.7 ? 'highly_complex' : score > 0.4 ? 'moderately_complex' : 'simple';
+    
+    return {
+      score: Math.min(score, 1.0),
+      type,
+      factors
+    };
+  }
+  
+  /**
    * Parse requirements from natural language intent
    */
   private parseRequirements(intent: string): string[] {
     const requirements: string[] = [];
     
-    // Simple keyword-based parsing
-    if (intent.toLowerCase().includes('analyze')) {
+    // Comprehensive keyword-based parsing
+    if (/\b(analyze|analysis)\b/i.test(intent)) {
       requirements.push('deep_analysis');
     }
-    if (intent.toLowerCase().includes('compare')) {
+    if (/\b(compare|comparison|versus|vs)\b/i.test(intent)) {
       requirements.push('comparison');
     }
-    if (intent.toLowerCase().includes('generate')) {
+    if (/\b(generate|create|build|design)\b/i.test(intent)) {
       requirements.push('generation');
     }
-    if (intent.toLowerCase().includes('explain')) {
+    if (/\b(explain|elaborate|clarify)\b/i.test(intent)) {
       requirements.push('explanation');
+    }
+    if (/\b(research|investigate|study)\b/i.test(intent)) {
+      requirements.push('research');
+    }
+    if (/\b(summarize|summary|overview)\b/i.test(intent)) {
+      requirements.push('summarization');
     }
     
     return requirements.length > 0 ? requirements : ['general_query'];
   }
 
   /**
-   * Delegate complex work to Orchestrator
+   * Delegate complex work to Orchestrator Harmony
    */
-  private async delegateToOrchestrator(covenant: Covenant) {
+  private async delegateToOrchestrator(covenant: Covenant, connection: any) {
     try {
-      // Get Orchestrator Durable Object stub
-      const orchestratorId = this.env.ORCHESTRATOR.idFromName('main');
+      console.log(`🎭 Mediator → Orchestrator: Delegating covenant ${covenant.id}`);
+      
+      // Get Orchestrator Durable Object stub (named 'harmony')
+      const orchestratorId = this.env.ORCHESTRATOR.idFromName('harmony');
       const orchestrator = this.env.ORCHESTRATOR.get(orchestratorId);
       
-      // Send covenant to orchestrator
+      // Send covenant to orchestrator with full context
+      const delegationPayload = {
+        covenant,
+        mediatorContext: {
+          userId: this.state.userId,
+          conversationHistory: this.messages.slice(-5), // Last 5 messages for context
+          performance: this.state.performance
+        },
+        callbackUrl: `https://mediator/covenant-complete`
+      };
+      
       await orchestrator.fetch('https://orchestrator/covenant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(covenant)
+        body: JSON.stringify(delegationPayload)
       });
       
-      console.log(`✅ Delegated covenant ${covenant.id} to Orchestrator`);
+      console.log(`✅ Delegated covenant ${covenant.id} to Orchestrator Harmony`);
+      
+      // Update database
+      this.sql`
+        UPDATE mediator_covenants 
+        SET status = 'delegated_to_orchestrator'
+        WHERE id = ${covenant.id}
+      `;
+      
+      // Notify client
+      connection.send(JSON.stringify({
+        type: 'delegation_complete',
+        covenantId: covenant.id,
+        message: '🎭 Orchestrator Harmony is now coordinating sub-agent swarm...'
+      }));
+      
+      // Start monitoring for completion (non-blocking)
+      this.monitorCovenantCompletion(covenant.id, connection);
+      
     } catch (error: any) {
       console.error(`❌ Failed to delegate to Orchestrator:`, error);
+      connection.send(JSON.stringify({
+        type: 'delegation_error',
+        covenantId: covenant.id,
+        error: error.message
+      }));
     }
+  }
+  
+  /**
+   * Monitor covenant completion (polling mechanism)
+   */
+  private async monitorCovenantCompletion(covenantId: string, connection: any) {
+    const maxAttempts = 60; // 60 attempts = 30 seconds max wait
+    let attempts = 0;
+    
+    const checkInterval = setInterval(async () => {
+      attempts++;
+      
+      // Check database for covenant status
+      const results = this.sql<{ status: string; updated_at: number }>`
+        SELECT status, updated_at FROM mediator_covenants WHERE id = ${covenantId}
+      `;
+      
+      if (results.length > 0) {
+        const status = results[0].status;
+        
+        if (status === 'completed' || status === 'failed') {
+          clearInterval(checkInterval);
+          console.log(`✅ Covenant ${covenantId} ${status}`);
+          return;
+        }
+      }
+      
+      if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        console.log(`⏱️ Covenant ${covenantId} monitoring timeout`);
+      }
+    }, 500); // Check every 500ms
   }
 
   /**
