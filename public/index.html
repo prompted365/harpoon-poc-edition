@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harpoon v2 - Dual Orchestrator Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Command Palette Overlay -->
+    <div id="paletteOverlay" class="hidden" onclick="toggleCommandPalette()"></div>
+    
+    <!-- Command Palette -->
+    <div id="commandPalette" class="hidden">
+        <div class="palette-header">
+            <input 
+                type="text" 
+                id="paletteInput" 
+                class="palette-input" 
+                placeholder="Type a command or search..."
+                autocomplete="off"
+            />
+        </div>
+        <div id="commandList" class="palette-list"></div>
+    </div>
+    
+    <!-- Agent Activity Indicator -->
+    <div id="agentActivity" class="hidden"></div>
+    
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+    
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Main Panel: Chat Interface -->
+        <div class="main-panel">
+            <!-- Header -->
+            <div class="chat-header">
+                <h1>
+                    ⚓ Harpoon v2
+                    <span style="font-weight: 400; font-size: 14px; color: var(--text-secondary); margin-left: 12px;">
+                        Dual Orchestrator Demo
+                    </span>
+                </h1>
+                <kbd class="cmd-hint">⌘K to open commands</kbd>
+            </div>
+            
+            <!-- Messages Container -->
+            <div id="messages" class="messages-container"></div>
+            
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        placeholder="Describe your goal... (Press Enter to send, Shift+Enter for new line)"
+                        rows="1"
+                    ></textarea>
+                    <button class="send-button" onclick="sendMessage()">
+                        Send →
+                    </button>
+                </div>
+                <div style="margin-top: 8px; font-size: 11px; color: var(--text-secondary);">
+                    💡 Try: "Plan a marketing campaign" or "Analyze and summarize this dataset"
+                </div>
+            </div>
+        </div>
+        
+        <!-- Side Panel: Covenant & Orchestration Tree -->
+        <div class="side-panel">
+            <!-- Covenant Section -->
+            <div class="side-panel-header">
+                <h2>📜 Active Covenant</h2>
+            </div>
+            <div style="padding: 20px; border-bottom: 1px solid var(--border-subtle);">
+                <div id="covenantCard">
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 13px;">
+                        No active covenant
+                        <div style="margin-top: 8px; font-size: 11px;">
+                            Start a conversation to create one
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Orchestration Tree Section -->
+            <div class="side-panel-header">
+                <h2>🌳 Orchestration Tree</h2>
+            </div>
+            <div class="side-panel-content">
+                <div id="orchestrationTree">
+                    <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 13px;">
+                        No active orchestration
+                        <div style="margin-top: 8px; font-size: 11px;">
+                            Sub-agents will appear here
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Insights Panel (Collapsible) -->
+            <div id="insightsPanel">
+                <div style="padding: 20px;">
+                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">System Insights</h3>
+                    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                        <div style="margin-bottom: 8px;">
+                            <strong>Mediator:</strong> Fast path for simple requests, coordinates 2-3 sub-agents
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Orchestrator:</strong> Complex workflows, manages up to 25 sub-agent swarm
+                        </div>
+                        <div>
+                            <strong>Covenant:</strong> User intent + constraints guide execution strategy
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
