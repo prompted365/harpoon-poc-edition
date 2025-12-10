@@ -5,5 +5,19 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
-  ]
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MEDIATOR",
+        "class_name": "MediatorAgent",
+        "script_name": "harpoon-v2"
+      },
+      {
+        "name": "ORCHESTRATOR",
+        "class_name": "OrchestratorAgent",
+        "script_name": "harpoon-v2"
+      }
+    ]
+  }
 }
