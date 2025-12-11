@@ -995,12 +995,14 @@ function initResizableSidebar() {
 
 // WebSocket Connection Management
 function connectWebSocket() {
-  // Disable WebSocket in development (localhost) - only use in production
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log('💡 WebSocket disabled in development mode');
-    console.log('🚀 Deploy to Cloudflare Pages for real-time updates via Durable Objects');
-    return;
-  }
+  // DISABLED: Durable Objects not configured (requires Workers Paid plan $5/month)
+  // WebSocket features require DO bindings to be set up in Cloudflare Dashboard
+  console.log('💡 WebSocket disabled - Durable Objects not configured');
+  console.log('ℹ️ REST API is fully functional for all features');
+  console.log('📚 See DURABLE_OBJECTS_SETUP.md for WebSocket setup instructions');
+  return;
+  
+  /* WEBSOCKET CODE DISABLED - UNCOMMENT AFTER CONFIGURING DURABLE OBJECTS
   
   // Check if WebSocket is supported
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1041,9 +1043,11 @@ function connectWebSocket() {
       }, 5000);
     };
   } catch (error) {
-    console.warn('⚠️ WebSocket not available (development mode)');
-    console.log('💡 Deploy to Cloudflare Pages for real-time features');
+    console.warn('⚠️ WebSocket not available');
+    console.log('💡 Configure Durable Objects for real-time features');
   }
+  
+  END OF DISABLED WEBSOCKET CODE */
 }
 
 function handleWebSocketMessage(message) {
