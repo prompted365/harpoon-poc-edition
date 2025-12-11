@@ -309,15 +309,73 @@ export class OrchestratorAgent extends DurableObject {
     });
   }
 
+  private createRainbowPlan(): SubAgent[] {
+    const rainbowColors = [
+      { name: 'Red', emoji: '🔴', hex: '#FF0000' },
+      { name: 'Orange', emoji: '🟠', hex: '#FF7F00' },
+      { name: 'Yellow', emoji: '🟡', hex: '#FFFF00' },
+      { name: 'Green', emoji: '🟢', hex: '#00FF00' },
+      { name: 'Blue', emoji: '🔵', hex: '#0000FF' },
+      { name: 'Indigo', emoji: '🟣', hex: '#4B0082' },
+      { name: 'Violet', emoji: '🟣', hex: '#9400D3' }
+    ];
+
+    return [
+      {
+        id: `agent-spawner-${Date.now()}`,
+        type: 'spawner',
+        role: '🌈 Rainbow Spawner',
+        status: 'pending',
+        progress: 0,
+        thoughts: 'Spawning color agents in gradient order',
+        actions: [],
+        output: null,
+        children: rainbowColors.map((color, index) => ({
+          id: `agent-color-${color.name.toLowerCase()}-${Date.now()}-${index}`,
+          type: `color-${color.name.toLowerCase()}`,
+          role: `${color.emoji} Return ${color.name}`,
+          status: 'pending',
+          progress: 0,
+          thoughts: `Waiting to emit ${color.name}`,
+          actions: [],
+          output: null,
+          children: [],
+          created_at: new Date().toISOString()
+        })),
+        created_at: new Date().toISOString()
+      },
+      {
+        id: `agent-aggregator-${Date.now()}`,
+        type: 'aggregator',
+        role: '📊 Gradient Aggregator',
+        status: 'pending',
+        progress: 0,
+        thoughts: 'Collecting colors in ROYGBIV order',
+        actions: [],
+        output: null,
+        children: [],
+        created_at: new Date().toISOString()
+      }
+    ];
+  }
+
   private createExecutionPlan(prompt: string): SubAgent[] {
+    // Detect rainbow covenant pattern
+    const isRainbowCovenant = /rainbow|colors?|gradient|roygbiv|sub-agent.*color/i.test(prompt);
+    
+    if (isRainbowCovenant) {
+      return this.createRainbowPlan();
+    }
+    
+    // Default orchestration plan
     const plan: SubAgent[] = [
       {
         id: `agent-classifier-${Date.now()}`,
         type: 'classifier',
-        role: 'Analyze task requirements and complexity',
+        role: 'Analyze complexity',
         status: 'pending',
         progress: 0,
-        thoughts: 'Waiting to start...',
+        thoughts: 'Task classification',
         actions: [],
         output: null,
         children: [],
@@ -326,10 +384,10 @@ export class OrchestratorAgent extends DurableObject {
       {
         id: `agent-router-${Date.now()}`,
         type: 'router',
-        role: 'Select optimal AI models for execution',
+        role: 'Select AI models',
         status: 'pending',
         progress: 0,
-        thoughts: 'Waiting to start...',
+        thoughts: 'Model selection',
         actions: [],
         output: null,
         children: [],
@@ -338,20 +396,20 @@ export class OrchestratorAgent extends DurableObject {
       {
         id: `agent-executor-${Date.now()}`,
         type: 'executor',
-        role: 'Execute sub-tasks in parallel',
+        role: 'Execute tasks',
         status: 'pending',
         progress: 0,
-        thoughts: 'Waiting to start...',
+        thoughts: 'Processing',
         actions: [],
         output: null,
         children: [
           {
             id: `agent-executor-1-${Date.now()}`,
             type: 'executor-1',
-            role: 'Parallel sub-task 1',
+            role: 'Sub-task 1',
             status: 'pending',
             progress: 0,
-            thoughts: 'Waiting...',
+            thoughts: 'Ready',
             actions: [],
             output: null,
             children: [],
@@ -360,10 +418,10 @@ export class OrchestratorAgent extends DurableObject {
           {
             id: `agent-executor-2-${Date.now()}`,
             type: 'executor-2',
-            role: 'Parallel sub-task 2',
+            role: 'Sub-task 2',
             status: 'pending',
             progress: 0,
-            thoughts: 'Waiting...',
+            thoughts: 'Ready',
             actions: [],
             output: null,
             children: [],
@@ -372,10 +430,10 @@ export class OrchestratorAgent extends DurableObject {
           {
             id: `agent-executor-3-${Date.now()}`,
             type: 'executor-3',
-            role: 'Parallel sub-task 3',
+            role: 'Sub-task 3',
             status: 'pending',
             progress: 0,
-            thoughts: 'Waiting...',
+            thoughts: 'Ready',
             actions: [],
             output: null,
             children: [],
@@ -387,10 +445,10 @@ export class OrchestratorAgent extends DurableObject {
       {
         id: `agent-evaluator-${Date.now()}`,
         type: 'evaluator',
-        role: 'Assess quality and completeness',
+        role: 'Quality check',
         status: 'pending',
         progress: 0,
-        thoughts: 'Waiting to start...',
+        thoughts: 'Evaluating',
         actions: [],
         output: null,
         children: [],
@@ -399,10 +457,10 @@ export class OrchestratorAgent extends DurableObject {
       {
         id: `agent-coordinator-${Date.now()}`,
         type: 'coordinator',
-        role: 'Synthesize final results',
+        role: 'Synthesize results',
         status: 'pending',
         progress: 0,
-        thoughts: 'Waiting to start...',
+        thoughts: 'Aggregating',
         actions: [],
         output: null,
         children: [],
@@ -451,7 +509,8 @@ export class OrchestratorAgent extends DurableObject {
 
       // Execute parallel children if any
       if (agent.children.length > 0) {
-        agent.thoughts = 'Spawning parallel sub-agents...';
+        const isRainbowSpawner = agent.type === 'spawner';
+        agent.thoughts = isRainbowSpawner ? '🌈 Spawning color agents...' : 'Spawning sub-agents...';
         this.broadcast({
           type: 'agent_progress',
           data: agent,
@@ -462,8 +521,19 @@ export class OrchestratorAgent extends DurableObject {
           const child = agent.children[i];
           
           child.status = 'running';
-          child.thoughts = `Parallel execution ${i + 1}/${agent.children.length}`;
-          child.actions.push('Working on sub-task');
+          
+          // Special handling for color agents
+          if (child.type.startsWith('color-')) {
+            const colorName = child.type.replace('color-', '');
+            const colorEmoji = child.role.split(' ')[0]; // Extract emoji
+            child.thoughts = `Emitting ${colorName}...`;
+            child.actions.push(`Generate ${colorName}`);
+            child.output = `${colorEmoji} ${colorName.toUpperCase()}`;
+          } else {
+            child.thoughts = `Processing ${i + 1}/${agent.children.length}`;
+            child.actions.push('Processing');
+            child.output = `Result ${i + 1}`;
+          }
 
           this.broadcast({
             type: 'agent_progress',
@@ -471,12 +541,11 @@ export class OrchestratorAgent extends DurableObject {
             timestamp: new Date().toISOString()
           });
 
-          await this.delay(150); // Faster for parallel agents
+          await this.delay(200); // Stagger for visual effect
 
           child.status = 'completed';
           child.progress = 100;
-          child.thoughts = 'Sub-task completed';
-          child.output = `Result ${i + 1}`;
+          child.thoughts = child.type.startsWith('color-') ? `${child.output} returned` : 'Complete';
           child.completed_at = new Date().toISOString();
 
           this.broadcast({
@@ -486,15 +555,30 @@ export class OrchestratorAgent extends DurableObject {
           });
         }
 
-        agent.thoughts = 'All parallel sub-agents completed';
-        agent.actions.push('Merging results');
+        agent.thoughts = isRainbowSpawner ? '🌈 All colors spawned' : 'Sub-agents completed';
+        agent.actions.push(isRainbowSpawner ? 'Colors ready' : 'Aggregating');
       }
 
       // Complete agent
       agent.status = 'completed';
       agent.progress = 100;
-      agent.thoughts = `${agent.type} task completed successfully`;
-      agent.output = `${agent.role} complete`;
+      
+      // Special output for rainbow agents
+      if (agent.type === 'spawner') {
+        const colors = agent.children.map(c => c.output).filter(Boolean);
+        agent.thoughts = '🌈 Rainbow gradient complete';
+        agent.output = `Colors spawned: ${colors.join(' → ')}`;
+      } else if (agent.type === 'aggregator') {
+        // Find spawner output and format
+        const spawner = plan.find(a => a.type === 'spawner');
+        const colors = spawner?.children.map(c => c.output).filter(Boolean) || [];
+        agent.thoughts = '📊 Gradient order verified: ROYGBIV';
+        agent.output = `🌈 ${colors.join(' → ')}\n\nGradient Complete! Red→Orange→Yellow→Green→Blue→Indigo→Violet`;
+      } else {
+        agent.thoughts = `${agent.type} completed`;
+        agent.output = `${agent.role} complete`;
+      }
+      
       agent.completed_at = new Date().toISOString();
 
       // Save to SQLite
