@@ -19,18 +19,6 @@ export const MODEL_REGISTRY: ModelConfig[] = [
     description: '450 T/sec Qwen3 32B - Excellent multilingual, fast and cost-effective'
   },
   
-  // FREE MODELS - Google AI Studio
-  {
-    id: 'google-ai-studio/gemma-3-1b-it:free',
-    provider: 'google-ai-studio',
-    tier: 'edge',
-    speed: 300,
-    costPer1M: 0,
-    contextWindow: 8192,
-    capabilities: ['chat', 'code', 'simple-tasks'],
-    description: 'Gemma 3 1B - FREE Google model'
-  },
-
   // TIER 2: EDGE - Workers AI (Cloudflare's built-in AI)
   {
     id: 'workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast',
