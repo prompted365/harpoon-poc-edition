@@ -78,6 +78,11 @@ export function getModelsByTier(tier: string): ModelConfig[] {
 }
 
 export function getDefaultModel(tier: string = 'primary'): ModelConfig {
+  // Always prefer Groq models - they work perfectly via AI Gateway
+  const groqModel = MODEL_REGISTRY.find(m => m.provider === 'groq');
+  if (groqModel) return groqModel;
+  
+  // Fallback to tier-specific models
   const models = getModelsByTier(tier);
   return models[0] || MODEL_REGISTRY[0];
 }
