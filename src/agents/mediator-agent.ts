@@ -177,7 +177,7 @@ export class MediatorAgent extends DurableObject {
     const body = await request.json();
     const covenant: Covenant = {
       id: `covenant-${Date.now()}`,
-      user_intent: body.user_intent,
+      user_intent: body.user_intent || body.intent || '',
       constraints: body.constraints || {
         cost: 0.01,
         latency: 5000,
@@ -217,7 +217,7 @@ export class MediatorAgent extends DurableObject {
   async createCovenantFromWS(data: any) {
     const covenant: Covenant = {
       id: `covenant-${Date.now()}`,
-      user_intent: data.user_intent,
+      user_intent: data.user_intent || data.intent || '',
       constraints: data.constraints || {
         cost: 0.01,
         latency: 5000,
