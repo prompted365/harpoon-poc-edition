@@ -70,19 +70,16 @@ export class SmartRouter {
    */
   routeRequest(request: AIRequest): RoutingDecision {
     const classification = this.classifyRequest(request);
-    const tierModels = getModelsByTier(classification.recommended_tier);
     
-    // Select primary model
-    const selectedModel = request.model 
-      ? MODEL_REGISTRY.find(m => m.id === request.model) || tierModels[0]
-      : tierModels[0];
-
-    // Select fallback models from same tier + always include Groq as final fallback
+    // Select primary model - ALWAYS use Groq unless explicitly specified
     const groqModel = MODEL_REGISTRY.find(m => m.provider === 'groq');
-    const fallbackModels = [
-      ...tierModels.filter(m => m.id !== selectedModel.id).slice(0, 1),
-      ...(groqModel && groqModel.id !== selectedModel.id ? [groqModel] : [])
-    ];
+    const selectedModel = request.model 
+      ? MODEL_REGISTRY.find(m => m.id === request.model) || groqModel
+      : groqModel;
+
+    // Select fallback models - OpenAI as backup
+    const openaiModel = MODEL_REGISTRY.find(m => m.provider === 'openai');
+    const fallbackModels = openaiModel && openaiModel.id !== selectedModel?.id ? [openaiModel] : [];
 
     // Estimate cost and latency
     const estimatedTokens = Math.max(
