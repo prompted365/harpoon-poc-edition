@@ -77,18 +77,13 @@ export class UnifiedAIClient {
       ? modelId.substring(`${provider}/`.length) 
       : modelId;
     
-    // Build headers - CRITICAL: Use cf-aig-authorization for BYOK
+    // Build headers - CRITICAL: Use cf-aig-authorization for AI Gateway
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'cf-aig-authorization': `Bearer ${this.env.AI_GATEWAY_TOKEN || ''}`
     };
     
-    // For BYOK: Use cf-aig-authorization header with your AI Gateway token
-    // The gateway will use the provider keys you stored in the dashboard
-    if (this.env.AI_GATEWAY_TOKEN) {
-      headers['cf-aig-authorization'] = `Bearer ${this.env.AI_GATEWAY_TOKEN}`;
-    }
-    
-    console.log(`🌐 Calling ${provider} via AI Gateway (BYOK): ${modelIdWithoutPrefix}`);
+    console.log(`🌐 Calling ${provider} via AI Gateway: ${modelIdWithoutPrefix}`);
     
     const response = await fetch(url, {
       method: 'POST',
