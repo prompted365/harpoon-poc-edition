@@ -1,96 +1,64 @@
 # 🚀 Latest Production Deployment
 
-**Deployment Date:** December 10, 2025 (23:50 UTC)
-**Production URL:** https://0a4955d9.harpoon-v2.pages.dev
+**Deployment Date:** December 10, 2025 (23:54 UTC)  
+**Production URL:** https://5ab2e0b4.harpoon-v2.pages.dev  
 **GitHub:** https://github.com/prompted365/harpoon-poc-edition
 
 ---
 
-## ✅ Status: LIVE & WORKING
+## ✅ Status: LIVE & VERIFIED
 
-### API Endpoints Verified:
-- ✅ `/api/health` - All 3 AI providers available (Groq, Workers AI, OpenAI)
-- ✅ `/api/models` - 15+ models available
+### Endpoints Tested:
+- ✅ `/api/health` - All AI providers available
+- ✅ `/api/agents/status` - Agent system ready
 - ✅ `/api/chat` - Smart routing functional
-- ✅ `/api/orchestrate/*` - All 4 patterns working
-- ✅ Main UI - Loading correctly
+- ✅ Main UI - Loading perfectly
 
-### Cloudflare Configuration:
-- ✅ API Token: Full permissions (Zone:Read, Workers:Edit, D1:Edit, Pages:Edit, etc.)
-- ✅ AI Gateway: All providers routing through gateway with BYOK
-- ✅ Build: 43.06 kB optimized bundle
-- ✅ Global CDN: Active
+### Latest Changes:
+- 🔑 API token refreshed with full permissions
+- 🌐 All providers routing through AI Gateway (BYOK)
+- 📦 Fresh build deployed (43.06 kB bundle)
+- ✅ Global edge network active
 
 ---
 
-## 🎯 What Works
+## 🎯 Features Live
 
-**UI Features:**
+**UI:**
 - 3-column layout (Covenant | Chat | Orchestration Tree)
-- Command Palette (Cmd+K / Ctrl+K)
-- Raw I/O display with expand/collapse
-- Status indicators for all agent tasks
+- Command Palette (Cmd+K)
+- Raw I/O display
+- Real-time status indicators
 
-**AI Capabilities:**
-- Smart routing across 4 providers
-- 15+ models (Llama, Qwen, GPT, Gemini)
-- 4 orchestration patterns (Parallel, Workers, Optimize, Smart)
-- AI Gateway for all providers (BYOK)
-
-**What's NOT Enabled (by choice):**
-- ❌ Durable Objects / WebSocket (requires paid plan or complex setup)
-- ❌ Real-time streaming (REST API works great instead)
-- ❌ Persistent SQLite storage (stateless works fine)
+**AI Orchestration:**
+- Smart routing (4 providers: Groq, Workers AI, OpenAI, Gemini)
+- 15+ models available
+- 4 orchestration patterns
+- AI Gateway for all requests
 
 ---
 
 ## 🧪 Quick Test
 
 ```bash
-# Test health
-curl https://0a4955d9.harpoon-v2.pages.dev/api/health
+# Health check
+curl https://5ab2e0b4.harpoon-v2.pages.dev/api/health
 
-# Test smart chat
-curl -X POST https://0a4955d9.harpoon-v2.pages.dev/api/chat \
+# Test chat
+curl -X POST https://5ab2e0b4.harpoon-v2.pages.dev/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Explain quantum computing in 2 sentences"}'
-
-# Test orchestration
-curl -X POST https://0a4955d9.harpoon-v2.pages.dev/api/orchestrate/smart \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Analyze the benefits of edge computing"}'
+  -d '{"prompt": "Hello!"}'
 ```
-
----
-
-## 📋 Deployment History
-
-- **0a4955d9** (current) - Full permissions, all providers via AI Gateway
-- **22d39a50** (previous) - Initial deployment with basic config
-
----
-
-## 🔑 API Key Status
-
-**Permissions:** ✅ Complete
-- Account Settings:Read
-- Workers Scripts:Edit
-- Workers KV Storage:Edit
-- D1:Edit
-- Cloudflare Pages:Edit
-- Zone:Read ✅ (newly added)
-- AI Gateway:Read/Edit/Run
-- And more...
 
 ---
 
 ## 🎉 Ready to Use!
 
-Visit: **https://0a4955d9.harpoon-v2.pages.dev**
+**Visit:** https://5ab2e0b4.harpoon-v2.pages.dev
 
-Try the rainbow covenant query:
+Try the rainbow covenant:
 ```
 Delegate a covenant for sub-agent spawning of sub-agents plz and ensure each returns a color of the rainbow and output to centralized context in gradient order starting with red
 ```
 
-Watch the orchestration tree light up! 🌈
+Watch the magic happen! 🌈✨
