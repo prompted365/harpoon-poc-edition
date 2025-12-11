@@ -342,20 +342,26 @@ app.post('/api/orchestrate/full', async (c) => {
   }
 
   try {
-    const { prompt, userId = 'default' } = await c.req.json();
+    const body = await c.req.json();
+    const { query, prompt, userId = 'default' } = body;
+    const userQuery = query || prompt || '';
     
-    console.log(`🚀 Full orchestration requested | User: ${userId} | Prompt: ${prompt.substring(0, 50)}...`);
+    if (!userQuery) {
+      return c.json({ success: false, error: 'Missing query or prompt field' }, 400);
+    }
+    
+    console.log(`🚀 Full orchestration requested | User: ${userId} | Query: ${userQuery.substring(0, 50)}...`);
     
     // Get Mediator Durable Object
     const mediatorId = env.MEDIATOR.idFromName(userId);
     const mediator = env.MEDIATOR.get(mediatorId);
     
-    // Send prompt to Mediator - it will handle complexity analysis and delegation
+    // Send query to Mediator - it will handle complexity analysis and delegation
     const mediatorResponse = await mediator.fetch(new Request('http://mediator/covenant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        intent: prompt,
+        intent: userQuery,
         constraints: {
           maxCost: 0.50,
           maxLatency: 30000,
