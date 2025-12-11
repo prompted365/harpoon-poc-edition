@@ -1,0 +1,14 @@
+name = "harpoon-v2"
+main = "dist/_worker.js"
+compatibility_date = "2025-12-10"
+compatibility_flags = ["nodejs_compat"]
+
+[durable_objects]
+bindings = [
+  { name = "MEDIATOR", class_name = "MediatorAgent", script_name = "harpoon-v2" },
+  { name = "ORCHESTRATOR", class_name = "OrchestratorAgent", script_name = "harpoon-v2" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MediatorAgent", "OrchestratorAgent"]
