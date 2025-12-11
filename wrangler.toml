@@ -1,13 +1,15 @@
-name = "harpoon-v2"
-main = "dist/_worker.js"
+name = "harpoon-v2-worker"
+main = "src/index.tsx"
 compatibility_date = "2025-12-10"
 compatibility_flags = ["nodejs_compat"]
 
-[durable_objects]
-bindings = [
-  { name = "MEDIATOR", class_name = "MediatorAgent", script_name = "harpoon-v2" },
-  { name = "ORCHESTRATOR", class_name = "OrchestratorAgent", script_name = "harpoon-v2" }
-]
+[[durable_objects.bindings]]
+name = "MEDIATOR"
+class_name = "MediatorAgent"
+
+[[durable_objects.bindings]]
+name = "ORCHESTRATOR"
+class_name = "OrchestratorAgent"
 
 [[migrations]]
 tag = "v1"
